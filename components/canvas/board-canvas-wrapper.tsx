@@ -27,6 +27,7 @@ export function BoardCanvasWrapper({
   const [screens, setScreens] = useState(initialScreens);
   const [comments, setComments] = useState(initialComments);
   const [currentBoardName, setCurrentBoardName] = useState(boardName);
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
 
   const canComment = !!humanId;
 
@@ -61,6 +62,20 @@ export function BoardCanvasWrapper({
     },
     [boardId, router]
   );
+
+  const handleShare = useCallback(async () => {
+    const res = await fetch("/api/v1/human/board-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ board_id: boardId }),
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      setShareUrl(data.url);
+      await navigator.clipboard.writeText(data.url).catch(() => {});
+    }
+  }, [boardId]);
 
   const handleAddComment = useCallback(
     async (comment: {
@@ -183,6 +198,8 @@ export function BoardCanvasWrapper({
       comments={comments}
       onScreenMove={readOnly ? undefined : handleScreenMove}
       onBoardRename={readOnly ? undefined : handleBoardRename}
+      onShare={readOnly ? undefined : handleShare}
+      shareUrl={shareUrl}
       onAddComment={canComment ? handleAddComment : undefined}
       onReplyComment={canComment ? handleReplyComment : undefined}
       onResolveComment={canComment ? handleResolveComment : undefined}

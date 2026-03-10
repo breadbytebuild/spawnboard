@@ -61,6 +61,8 @@ interface BoardCanvasProps {
   onDeleteComment?: (commentId: string) => void;
   onScreenMove?: (screenId: string, x: number, y: number) => void;
   onBoardRename?: (name: string) => void;
+  onShare?: () => void;
+  shareUrl?: string | null;
 }
 
 interface ViewportRect {
@@ -127,6 +129,57 @@ function screenAtPoint(
     }
   }
   return undefined;
+}
+
+function ShareButton({
+  onShare,
+  shareUrl,
+}: {
+  onShare: () => void;
+  shareUrl?: string | null;
+}) {
+  const [copied, setCopied] = useState(false);
+
+  const handleClick = async () => {
+    if (shareUrl) {
+      await navigator.clipboard.writeText(shareUrl).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } else {
+      onShare();
+    }
+  };
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      className={cn(
+        "flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer",
+        copied
+          ? "bg-success/10 text-success"
+          : "bg-surface/80 backdrop-blur-sm border border-border text-text-secondary hover:text-text-primary hover:bg-surface"
+      )}
+    >
+      {copied ? (
+        <>
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <polyline points="20 6 9 17 4 12" />
+          </svg>
+          Copied!
+        </>
+      ) : (
+        <>
+          <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8" />
+            <polyline points="16 6 12 2 8 6" />
+            <line x1="12" y1="2" x2="12" y2="15" />
+          </svg>
+          Share
+        </>
+      )}
+    </button>
+  );
 }
 
 function EditableBoardName({
@@ -284,6 +337,8 @@ export function BoardCanvas({
   onDeleteComment,
   onScreenMove,
   onBoardRename,
+  onShare,
+  shareUrl,
 }: BoardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -821,6 +876,9 @@ export function BoardCanvas({
           <span className="text-xs font-mono text-accent bg-accent-muted px-2 py-0.5 rounded">
             COMMENT MODE
           </span>
+        )}
+        {onShare && (
+          <ShareButton onShare={onShare} shareUrl={shareUrl} />
         )}
       </div>
 
