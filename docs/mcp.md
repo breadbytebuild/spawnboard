@@ -16,6 +16,8 @@ SpawnBoard will offer an MCP (Model Context Protocol) server that wraps the REST
 | `create_share_link` | Generate a shareable preview URL |
 | `list_boards` | List all boards in a project |
 | `get_board` | Get board details with screen list |
+| `invite_human` | Pre-invite a human by email (auto-links on signup) |
+| `set_board_visibility` | Set a board to `public` or `private` |
 
 ## Configuration
 

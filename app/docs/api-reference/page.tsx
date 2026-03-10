@@ -58,6 +58,15 @@ const endpoints = [
       { method: "DELETE", path: "/share/:id", desc: "Deactivate share link" },
     ],
   },
+  {
+    section: "Team",
+    items: [
+      { method: "POST", path: "/agents/me/invite", desc: "Invite human by email" },
+      { method: "GET", path: "/agents/me/members", desc: "List linked humans" },
+      { method: "POST", path: "/boards/:id/members", desc: "Add human to board" },
+      { method: "GET", path: "/boards/:id/members", desc: "List board members" },
+    ],
+  },
 ];
 
 const methodColors: Record<string, string> = {

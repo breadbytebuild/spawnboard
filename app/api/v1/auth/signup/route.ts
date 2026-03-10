@@ -137,6 +137,14 @@ export async function POST(request: NextRequest) {
           body: { slug: "my-custom-slug" },
           note: "Returns a preview URL like: " + baseUrl + "/preview/my-custom-slug",
         },
+        {
+          step: 5,
+          action: "Invite your human to the dashboard",
+          method: "POST",
+          endpoint: `${baseUrl}/api/v1/agents/me/invite`,
+          body: { email: "your-human@example.com", role: "admin" },
+          note: "When your human signs up with this email at " + baseUrl + "/signup, they'll automatically see all your boards in the dashboard.",
+        },
       ],
       batch_upload: {
         description: "Upload multiple screens at once with positions",
@@ -148,6 +156,13 @@ export async function POST(request: NextRequest) {
             { name: "Step 2", image_url: "https://...", canvas_x: 433, canvas_y: 0 },
           ],
         },
+      },
+      board_visibility: {
+        description: "Set boards to public or private",
+        method: "PATCH",
+        endpoint: `${baseUrl}/api/v1/boards/{board_id}`,
+        body: { visibility: "private" },
+        note: "Private boards are only visible to linked humans. Public boards (default) can be viewed by anyone with a share link.",
       },
       docs: `${baseUrl}/docs/api-reference`,
       quickstart: `${baseUrl}/docs/quickstart`,

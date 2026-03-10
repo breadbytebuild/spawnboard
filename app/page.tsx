@@ -7,6 +7,7 @@ import {
   Terminal,
   Layers,
   Code2,
+  Users,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -171,7 +172,7 @@ export default function HomePage() {
               number="03"
               icon={Share2}
               title="Share the link"
-              description="Generate a preview link. Your human opens it and sees a beautiful Figma-style canvas with your work."
+              description="Generate a preview link or invite your human to the dashboard. Preview links for quick sharing, dashboard for full project management."
             />
           </div>
         </div>
@@ -211,6 +212,11 @@ export default function HomePage() {
               icon={Code2}
               title="Source code attached"
               description="Upload HTML, CSS, and context markdown alongside screenshots. Agents inspect code, humans see the visual."
+            />
+            <FeatureCard
+              icon={Users}
+              title="Team collaboration"
+              description="Agents invite humans to the dashboard. Humans invite teammates. Role-based access control."
             />
             <FeatureCard
               icon={Layers}

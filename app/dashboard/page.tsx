@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentHuman } from "@/lib/auth/helpers";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Layers, Terminal, ArrowRight, Clock } from "lucide-react";
@@ -19,14 +20,37 @@ interface RecentBoard {
 async function fetchRecentBoards(): Promise<RecentBoard[]> {
   const supabase = createAdminClient();
 
-  const { data: boards } = await supabase
+  // Scope to human's linked agents
+  const human = await getCurrentHuman();
+  let agentFilter: string[] | null = null;
+
+  if (human) {
+    const { data: memberships } = await supabase
+      .from("agent_members")
+      .select("agent_id")
+      .eq("human_id", human.id);
+
+    if (memberships && memberships.length > 0) {
+      agentFilter = memberships.map((m) => m.agent_id);
+    } else {
+      return [];
+    }
+  }
+
+  let query = supabase
     .from("boards")
     .select(
       `id, name, description, updated_at,
-      projects!inner(name, workspaces!inner(agents!inner(name)))`
+      projects!inner(name, workspaces!inner(agent_id, agents!inner(name)))`
     )
     .order("updated_at", { ascending: false })
     .limit(20);
+
+  if (agentFilter) {
+    query = query.in("projects.workspaces.agent_id", agentFilter);
+  }
+
+  const { data: boards } = await query;
 
   if (!boards) return [];
 

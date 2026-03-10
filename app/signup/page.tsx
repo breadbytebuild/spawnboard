@@ -74,38 +74,35 @@ function SignupContent() {
     setLoading(true);
 
     try {
-      const supabase = createClient();
-      const { data, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: { name, user_type: "human" },
-        },
-      });
-
-      if (authError) {
-        if (authError.message.includes("already registered")) {
-          setError("An account with this email already exists. Try logging in instead.");
-        } else {
-          setError(authError.message);
-        }
-        return;
-      }
-
-      if (!data.user) {
-        setError("Signup failed. Please try again.");
-        return;
-      }
-
+      // Server-side signup: creates auth user (with email confirm skipped) + human record + auto-links invites
       const res = await fetch("/api/v1/auth/human-signup", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: name || email.split("@")[0], email }),
+        body: JSON.stringify({
+          name: name || email.split("@")[0],
+          email,
+          password,
+          agent_id: agentId || undefined,
+        }),
       });
 
+      const data = await res.json();
+
       if (!res.ok) {
-        const body = await res.json().catch(() => null);
-        setError(body?.error || "Account created but profile setup failed. Please log in.");
+        setError(data?.error || "Signup failed. Please try again.");
+        return;
+      }
+
+      // Sign in with the newly created credentials
+      const supabase = createClient();
+      const { error: loginError } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (loginError) {
+        setError("Account created! Please log in to continue.");
+        router.push("/login");
         return;
       }
 
