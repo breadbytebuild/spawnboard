@@ -30,7 +30,7 @@ export default async function BoardPage({ params }: Props) {
   const { data: screens } = await supabase
     .from("screens")
     .select(
-      "id, name, image_url, html_url, source_type, width, height, canvas_x, canvas_y, canvas_scale, sort_order, metadata"
+      "id, name, image_url, html_url, source_type, width, height, canvas_x, canvas_y, canvas_scale, sort_order, metadata, source_html, source_css, context_md"
     )
     .eq("board_id", id)
     .order("sort_order")
@@ -53,6 +53,9 @@ export default async function BoardPage({ params }: Props) {
           canvas_scale: s.canvas_scale,
           sort_order: s.sort_order,
           metadata: (s.metadata as Record<string, unknown>) || {},
+          source_html: s.source_html ?? null,
+          source_css: s.source_css ?? null,
+          context_md: s.context_md ?? null,
         }))}
         boardName={board.name}
       />

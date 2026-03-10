@@ -68,6 +68,9 @@ export default async function PreviewPage({ params }: Props) {
       canvas_scale: number;
       sort_order: number;
       metadata: Record<string, unknown>;
+      source_html: string | null;
+      source_css: string | null;
+      context_md: string | null;
     }>;
     agent: { name: string; avatar_url: string | null };
     share: { slug: string; created_at: string };

@@ -13,6 +13,9 @@ const createScreenSchema = z.object({
   canvas_x: z.coerce.number().optional(),
   canvas_y: z.coerce.number().optional(),
   metadata: z.string().optional(),
+  source_html: z.string().max(2_000_000).optional(),
+  source_css: z.string().max(500_000).optional(),
+  context_md: z.string().max(100_000).optional(),
 });
 
 export async function GET(
@@ -86,6 +89,9 @@ export async function POST(
     canvas_x: getString("canvas_x"),
     canvas_y: getString("canvas_y"),
     metadata: getString("metadata"),
+    source_html: getString("source_html"),
+    source_css: getString("source_css"),
+    context_md: getString("context_md"),
   };
 
   const parsed = createScreenSchema.safeParse(fields);
@@ -93,7 +99,7 @@ export async function POST(
     return zodApiError(parsed.error, "screen upload");
   }
 
-  const { name, width = 393, height = 852, metadata } = parsed.data;
+  const { name, width = 393, height = 852, metadata, source_html, source_css, context_md } = parsed.data;
   const imageFile = formData.get("image");
   const htmlContent = formData.get("html") as string | null;
 
@@ -189,6 +195,9 @@ export async function POST(
       canvas_x: canvasX,
       canvas_y: canvasY,
       metadata: parsedMetadata,
+      source_html: source_html || null,
+      source_css: source_css || null,
+      context_md: context_md || null,
     })
     .select()
     .single();

@@ -11,6 +11,9 @@ const updateScreenSchema = z.object({
   canvas_y: z.number().optional(),
   canvas_scale: z.number().positive().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  source_html: z.string().max(2_000_000).optional(),
+  source_css: z.string().max(500_000).optional(),
+  context_md: z.string().max(100_000).optional(),
 });
 
 async function getOwnedScreen(supabase: ReturnType<typeof createAdminClient>, screenId: string, agentId: string) {

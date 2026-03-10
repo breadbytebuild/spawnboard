@@ -15,6 +15,9 @@ const batchScreenSchema = z.object({
   canvas_x: z.number().optional(),
   canvas_y: z.number().optional(),
   metadata: z.record(z.string(), z.unknown()).optional(),
+  source_html: z.string().max(2_000_000).optional(),
+  source_css: z.string().max(500_000).optional(),
+  context_md: z.string().max(100_000).optional(),
 });
 
 const batchBodySchema = z.object({
@@ -92,6 +95,9 @@ export async function POST(
       canvas_y: canvasY,
       sort_order: existingCount + i,
       metadata: s.metadata ?? {},
+      source_html: s.source_html ?? null,
+      source_css: s.source_css ?? null,
+      context_md: s.context_md ?? null,
     };
   });
 

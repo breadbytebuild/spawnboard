@@ -20,6 +20,9 @@ export interface Screen {
   canvas_scale: number;
   sort_order: number;
   metadata: Record<string, unknown>;
+  source_html: string | null;
+  source_css: string | null;
+  context_md: string | null;
 }
 
 interface BoardCanvasProps {
