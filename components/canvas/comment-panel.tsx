@@ -3,7 +3,6 @@
 import { useEffect, useRef, useState } from "react";
 import {
   X,
-  Check,
   CheckCircle2,
   CircleDot,
   Bot,
@@ -217,27 +216,21 @@ export function CommentPanel({
         <div className="flex items-center gap-2">
           <CircleDot className="w-4 h-4 text-text-tertiary" />
           <span className="text-sm font-medium text-text-primary">Thread</span>
-          {comment.is_resolved && (
-            <span className="flex items-center gap-0.5 text-[10px] font-mono text-success bg-success/10 px-1.5 py-0.5 rounded">
-              <Check className="w-2.5 h-2.5" />
-              Resolved
-            </span>
-          )}
         </div>
         <div className="flex items-center gap-1">
           {!readOnly && onResolve && (
             <button
               type="button"
               onClick={() => onResolve(!comment.is_resolved)}
-              title={comment.is_resolved ? "Unresolve" : "Resolve"}
               className={cn(
-                "p-1.5 rounded-lg transition-colors cursor-pointer",
+                "flex items-center gap-1 px-2 py-1 rounded-lg text-xs font-medium transition-colors cursor-pointer",
                 comment.is_resolved
-                  ? "text-success hover:text-text-secondary hover:bg-surface-elevated"
+                  ? "text-success bg-success/10 hover:bg-success/20"
                   : "text-text-tertiary hover:text-success hover:bg-success/10"
               )}
             >
-              <CheckCircle2 className="w-4 h-4" />
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              {comment.is_resolved ? "Resolved" : "Resolve"}
             </button>
           )}
           <button

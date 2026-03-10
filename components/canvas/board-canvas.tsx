@@ -160,7 +160,10 @@ function CommentInputPopover({
   return (
     <div
       className="absolute z-50 bg-surface border border-border rounded-xl shadow-2xl shadow-black/50 p-3 w-64"
-      style={{ left: position.x, top: position.y }}
+      style={{
+        left: Math.min(position.x, (typeof window !== "undefined" ? window.innerWidth : 1200) - 280),
+        top: Math.min(position.y, (typeof window !== "undefined" ? window.innerHeight : 800) - 200),
+      }}
       onClick={(e) => e.stopPropagation()}
       onMouseDown={(e) => e.stopPropagation()}
     >
@@ -514,10 +517,8 @@ export function BoardCanvas({
     : isPanning
       ? "grabbing"
       : commentMode
-        ? "crosshair"
-        : !readOnly && onScreenMove
-          ? "default"
-          : "default";
+        ? `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24' fill='%236366F1' stroke='white' stroke-width='1.5'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E") 4 20, crosshair`
+        : "default";
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-background">
