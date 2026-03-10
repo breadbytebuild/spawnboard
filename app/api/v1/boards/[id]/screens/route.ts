@@ -124,7 +124,7 @@ export async function POST(
       return apiError("BAD_REQUEST", "Image file too large (max 10MB). Resize or compress the image and retry.", { fix: "Reduce image file size to under 10MB" });
     }
     if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
-      return apiError("BAD_REQUEST", `Unsupported image format. Accepted formats: image/png, image/jpeg, image/webp. Got: ${imageFile.type}`, { fix: "Convert your image to PNG, JPEG, or WebP format" });
+      return apiError("BAD_REQUEST", `Unsupported image format. Accepted: ${ALLOWED_IMAGE_TYPES.join(", ")}. Got: ${imageFile.type}`, { fix: "Use PNG, JPEG, WebP, SVG, GIF, or AVIF format" });
     }
   }
 

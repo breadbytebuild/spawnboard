@@ -87,6 +87,32 @@ export async function PATCH(
     return apiError("BAD_REQUEST", "No fields to update. Accepts: { name?, canvas_x?, canvas_y?, canvas_scale?, metadata?, source_html?, source_css?, context_md?, tags?, description? }", { fix: "Include at least one field in your JSON body" });
   }
 
+  // Snapshot to version history if content fields are changing
+  const contentChanging =
+    parsed.data.source_html !== undefined ||
+    parsed.data.source_css !== undefined ||
+    parsed.data.context_md !== undefined;
+
+  if (contentChanging) {
+    await supabase.from("screen_versions").insert({
+      screen_id: screenId,
+      version: existing.version || 1,
+      image_url: existing.image_url,
+      html_url: existing.html_url,
+      source_html: existing.source_html,
+      source_css: existing.source_css,
+      context_md: existing.context_md,
+      file_type: existing.file_type,
+      file_size: existing.file_size,
+      tags: existing.tags || [],
+      description: existing.description,
+      created_by_type: "agent",
+      created_by_name: agent.name,
+    }).then(() => {});
+
+    updateFields.version = (existing.version || 1) + 1;
+  }
+
   const { data: screen, error } = await supabase
     .from("screens")
     .update(updateFields)
