@@ -303,6 +303,8 @@ export function BoardCanvas({
   const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
   const dragDeltaRef = useRef({ dx: 0, dy: 0 });
   const dragStartRef = useRef({ canvasX: 0, canvasY: 0, screenX: 0, screenY: 0 });
+  const didDragRef = useRef(false);
+  const clickSuppressedUntilRef = useRef(0);
 
   const offsetRef = useRef(offset);
   const zoomRef = useRef(zoom);
@@ -400,6 +402,9 @@ export function BoardCanvas({
   useEffect(() => {
     if (!draggingScreenId) return;
 
+    const DRAG_THRESHOLD = 4;
+    const SNAP_DISTANCE = 15;
+
     const onMouseMove = (e: MouseEvent) => {
       const el = containerRef.current;
       if (!el) return;
@@ -410,18 +415,58 @@ export function BoardCanvas({
         dx: canvasX - dragStartRef.current.canvasX,
         dy: canvasY - dragStartRef.current.canvasY,
       };
+      if (Math.abs(next.dx) > DRAG_THRESHOLD || Math.abs(next.dy) > DRAG_THRESHOLD) {
+        didDragRef.current = true;
+      }
       dragDeltaRef.current = next;
       setDragDelta(next);
     };
 
     const onMouseUp = () => {
       const { dx, dy } = dragDeltaRef.current;
-      const finalX = dragStartRef.current.screenX + dx;
-      const finalY = dragStartRef.current.screenY + dy;
-      onScreenMove?.(draggingScreenId, Math.round(finalX), Math.round(finalY));
+      let finalX = dragStartRef.current.screenX + dx;
+      let finalY = dragStartRef.current.screenY + dy;
+
+      // Snap to nearest screen edge (horizontal and vertical alignment)
+      if (didDragRef.current) {
+        const draggedScreen = screens.find((s) => s.id === draggingScreenId);
+        if (draggedScreen) {
+          const dw = draggedScreen.width * draggedScreen.canvas_scale;
+          const dh = draggedScreen.height * draggedScreen.canvas_scale;
+
+          for (const other of screens) {
+            if (other.id === draggingScreenId) continue;
+            const ow = other.width * other.canvas_scale;
+            const oh = other.height * other.canvas_scale;
+
+            // Snap left edges aligned
+            if (Math.abs(finalX - other.canvas_x) < SNAP_DISTANCE) finalX = other.canvas_x;
+            // Snap right edge to right edge
+            if (Math.abs((finalX + dw) - (other.canvas_x + ow)) < SNAP_DISTANCE) finalX = other.canvas_x + ow - dw;
+            // Snap left to right (side by side with gap)
+            if (Math.abs(finalX - (other.canvas_x + ow + 40)) < SNAP_DISTANCE) finalX = other.canvas_x + ow + 40;
+            // Snap right to left
+            if (Math.abs((finalX + dw + 40) - other.canvas_x) < SNAP_DISTANCE) finalX = other.canvas_x - dw - 40;
+
+            // Vertical snaps
+            if (Math.abs(finalY - other.canvas_y) < SNAP_DISTANCE) finalY = other.canvas_y;
+            if (Math.abs((finalY + dh) - (other.canvas_y + oh)) < SNAP_DISTANCE) finalY = other.canvas_y + oh - dh;
+            if (Math.abs(finalY - (other.canvas_y + oh + 40)) < SNAP_DISTANCE) finalY = other.canvas_y + oh + 40;
+            if (Math.abs((finalY + dh + 40) - other.canvas_y) < SNAP_DISTANCE) finalY = other.canvas_y - dh - 40;
+          }
+        }
+      }
+
+      if (didDragRef.current) {
+        onScreenMove?.(draggingScreenId!, Math.round(finalX), Math.round(finalY));
+        // Suppress the click event that follows mouseup
+        clickSuppressedUntilRef.current = Date.now() + 100;
+      }
+
       setDraggingScreenId(null);
       setDragDelta({ dx: 0, dy: 0 });
       dragDeltaRef.current = { dx: 0, dy: 0 };
+      didDragRef.current = false;
     };
 
     window.addEventListener("mousemove", onMouseMove);
@@ -637,7 +682,10 @@ export function BoardCanvas({
                 isLiveEligible={liveIframeIds.has(screen.id)}
                 onClick={
                   !draggingScreenId && !commentMode
-                    ? () => setSelectedScreen(screen)
+                    ? () => {
+                        if (Date.now() < clickSuppressedUntilRef.current) return;
+                        setSelectedScreen(screen);
+                      }
                     : undefined
                 }
               />
