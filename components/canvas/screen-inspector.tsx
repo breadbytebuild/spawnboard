@@ -29,10 +29,13 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
   const [activeTab, setActiveTab] = useState<Tab>("visual");
   const [copiedTab, setCopiedTab] = useState<string | null>(null);
 
-  const hasHtml = !!screen.source_html;
+  const hasSourceHtml = !!screen.source_html;
+  const hasHostedHtml = !!screen.html_url;
+  const hasHtml = hasSourceHtml || hasHostedHtml;
   const hasCss = !!screen.source_css;
   const hasContext = !!screen.context_md;
-  const hasCode = hasHtml || hasCss || hasContext;
+  const hasImage = !!screen.image_url;
+  const hasCode = hasSourceHtml || hasCss || hasContext;
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -55,7 +58,7 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
 
   const tabs: Array<{ id: Tab; label: string; icon: typeof Monitor; available: boolean }> = [
     { id: "visual", label: "Visual", icon: Monitor, available: true },
-    { id: "html", label: "HTML", icon: Code2, available: hasHtml },
+    { id: "html", label: "HTML", icon: Code2, available: hasSourceHtml },
     { id: "css", label: "CSS", icon: Palette, available: hasCss },
     { id: "context", label: "Context", icon: FileText, available: hasContext },
   ];
@@ -90,14 +93,14 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
 
             {/* Always-visible asset type indicator */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {screen.image_url && (
+              {hasImage && (
                 <span className="text-[10px] font-mono bg-surface-elevated text-text-secondary px-1.5 py-0.5 rounded border border-border">
                   IMG
                 </span>
               )}
               {hasHtml && (
                 <span className="text-[10px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
-                  HTML
+                  {hasSourceHtml ? "HTML" : "LIVE"}
                 </span>
               )}
               {hasCss && (
@@ -110,9 +113,9 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
                   CONTEXT
                 </span>
               )}
-              {!screen.image_url && !hasHtml && !hasCss && !hasContext && (
+              {!hasImage && !hasHtml && (
                 <span className="text-[10px] font-mono bg-surface-elevated text-text-tertiary px-1.5 py-0.5 rounded border border-border">
-                  IMAGE ONLY
+                  NO PREVIEW
                 </span>
               )}
             </div>
