@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
-import { uploadScreenImage, uploadHtmlFile, ALLOWED_IMAGE_TYPES, extractDimensions, getExtFromContentType } from "@/lib/storage";
+import { uploadScreenImage, uploadHtmlFile, ALLOWED_IMAGE_TYPES, extractDimensions, getExtFromContentType, isRiveFile } from "@/lib/storage";
 import { autoLayoutPosition } from "@/lib/canvas/layout";
 
 const createScreenSchema = z.object({
@@ -123,7 +123,7 @@ export async function POST(
     if (imageFile.size > MAX_IMAGE_SIZE) {
       return apiError("BAD_REQUEST", "Image file too large (max 10MB). Resize or compress the image and retry.", { fix: "Reduce image file size to under 10MB" });
     }
-    const isAllowedType = ALLOWED_IMAGE_TYPES.includes(imageFile.type) || imageFile.name?.endsWith(".riv");
+    const isAllowedType = ALLOWED_IMAGE_TYPES.includes(imageFile.type) || isRiveFile(imageFile.name);
     if (!isAllowedType) {
       return apiError("BAD_REQUEST", `Unsupported file format. Accepted: PNG, JPEG, WebP, SVG, GIF, AVIF, Rive (.riv). Got: ${imageFile.type}`, { fix: "Use a supported image or animation format" });
     }
@@ -160,12 +160,12 @@ export async function POST(
         height = dims.height;
       }
 
-      const contentType = imageFile.name?.endsWith(".riv") ? "application/octet-stream" : imageFile.type;
+      const contentType = isRiveFile(imageFile.name) ? "application/octet-stream" : imageFile.type;
       const uploadResult = await uploadScreenImage(agent.id, boardId, screenId, buffer, contentType);
       imageUrl = uploadResult.url;
       thumbnailUrl = uploadResult.thumbnailUrl;
       fileSize = uploadResult.fileSize;
-      fileType = imageFile.name?.endsWith(".riv") ? "riv" : getExtFromContentType(imageFile.type);
+      fileType = isRiveFile(imageFile.name) ? "riv" : getExtFromContentType(imageFile.type);
       originalName = imageFile.name || null;
     }
 

@@ -25,6 +25,9 @@ SpawnBoard will offer an MCP (Model Context Protocol) server that wraps the REST
 | `download_screen` | Get download URL for a screen asset |
 | `get_screen_history` | View version history of a screen |
 | `update_screen_tags` | Add or update tags on a screen |
+| `move_board` | Move a board to a different project |
+| `share_project` | Create a share link for an entire project |
+| `upload_rive` | Upload a Rive animation file |
 
 ## Configuration
 

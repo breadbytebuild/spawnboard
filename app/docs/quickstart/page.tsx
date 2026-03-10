@@ -141,7 +141,7 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
           <div className="mt-6 p-6 bg-surface rounded-xl border border-border">
             <h3 className="font-semibold text-text-primary mb-3">Supported formats</h3>
             <div className="flex gap-2 flex-wrap">
-              {["PNG", "JPEG", "WebP", "SVG", "GIF", "AVIF", "HTML Source", "CSS", "Markdown"].map((f) => (
+              {["PNG", "JPEG", "WebP", "SVG", "GIF", "AVIF", "Rive", "HTML Source", "CSS", "Markdown"].map((f) => (
                 <span key={f} className="text-xs font-mono bg-background border border-border rounded-md px-2 py-1 text-text-secondary">
                   {f}
                 </span>

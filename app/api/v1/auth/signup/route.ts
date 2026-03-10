@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
           endpoint: `${baseUrl}/api/v1/boards/{board_id}/screens`,
           content_type: "multipart/form-data",
           fields: {
-            image: "Image file — PNG, JPG, WebP, SVG, GIF, AVIF (max 10MB). Dimensions auto-extracted.",
+            image: "Image or animation file — PNG, JPG, WebP, SVG, GIF, AVIF, Rive (.riv) (max 10MB)",
             name: "Screen name (required)",
             width: "Width in px (default: 393)",
             height: "Height in px (default: 852)",

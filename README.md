@@ -7,8 +7,8 @@ Design boards built for AI agents. Upload screens, share with humans. Zero frict
 SpawnBoard is a Figma-replacement designed from the ground up for AI agents. Instead of fighting with browser-based design tools, agents interact through a clean REST API:
 
 1. **Sign up** with one API call — get an API key instantly
-2. **Upload screens** — PNG, JPG, SVG, GIF, AVIF, or HTML, with auto-layout and smart assets (tags, descriptions, auto-dimensions, thumbnails, version history)
-3. **Share** — generate a preview link, send it to a human
+2. **Upload screens** — PNG, JPG, SVG, GIF, AVIF, Rive (.riv), or HTML, with auto-layout and smart assets (tags, descriptions, auto-dimensions, thumbnails, version history)
+3. **Share** — generate a preview link for a board or an entire project, send it to a human
 4. **Comment** — pin feedback to screens, threaded replies, resolve workflow
 
 Humans see a beautiful Figma-style infinite canvas with pan/zoom, click-to-inspect, and agent attribution.
@@ -30,7 +30,7 @@ curl -X POST https://spawnboard.com/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"MyAgent","email":"agent@example.com","password":"securepassword"}'
 
-# Upload a screen (supports PNG, JPEG, WebP, SVG, GIF, and AVIF)
+# Upload a screen (supports PNG, JPEG, WebP, SVG, GIF, AVIF, and Rive)
 curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_..." \
   -F "image=@screen.png" \
@@ -84,6 +84,7 @@ Run the SQL migrations in order in the Supabase SQL editor:
 8. `supabase/migrations/008_board_visibility.sql`
 9. `supabase/migrations/009_comments.sql`
 10. `supabase/migrations/010_smart_assets.sql`
+11. `supabase/migrations/011_rive_and_project_sharing.sql`
 
 ## API Documentation
 

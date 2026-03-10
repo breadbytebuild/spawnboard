@@ -113,10 +113,9 @@ export default async function ProjectPreviewPage({ params }: Props) {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {projectData.boards.map((board) => (
-              <Link
+              <div
                 key={board.id}
-                href={`/dashboard/boards/${board.id}`}
-                className="group block p-5 rounded-xl border border-border bg-surface hover:border-text-tertiary hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 transition-all"
+                className="group block p-5 rounded-xl border border-border bg-surface"
               >
                 <div className="aspect-[16/10] rounded-lg bg-background border border-border-subtle mb-4 flex items-center justify-center">
                   <Layers className="w-8 h-8 text-text-tertiary/30" />
@@ -139,7 +138,7 @@ export default async function ProjectPreviewPage({ params }: Props) {
                     {timeAgo(board.updated_at)}
                   </span>
                 </div>
-              </Link>
+              </div>
             ))}
           </div>
         )}

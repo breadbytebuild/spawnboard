@@ -8,17 +8,13 @@ const EXT_MAP: Record<string, string> = {
   "image/svg+xml": "svg",
   "image/gif": "gif",
   "image/avif": "avif",
-  "application/octet-stream": "riv",
   "application/x-rive": "riv",
 };
 
 export const ALLOWED_IMAGE_TYPES = Object.keys(EXT_MAP);
 
-export function isRiveFile(filename: string, contentType: string): boolean {
-  return (
-    filename.endsWith(".riv") ||
-    contentType === "application/x-rive"
-  );
+export function isRiveFile(filename: string | undefined | null): boolean {
+  return !!filename && filename.toLowerCase().endsWith(".riv");
 }
 
 export function getExtFromContentType(contentType: string): string {
@@ -84,10 +80,11 @@ export async function uploadScreenImage(
   } = supabase.storage.from("screens").getPublicUrl(path);
 
   // Thumbnail via Supabase Storage transforms (width=400)
-  const thumbnailUrl =
-    contentType === "image/svg+xml"
-      ? publicUrl // SVGs don't need thumbnails — they're vector
-      : `${publicUrl}?width=400`;
+  const noTransform =
+    contentType === "image/svg+xml" ||
+    contentType === "application/octet-stream" ||
+    contentType === "application/x-rive";
+  const thumbnailUrl = noTransform ? publicUrl : `${publicUrl}?width=400`;
 
   return { url: publicUrl, thumbnailUrl, fileSize: file.length };
 }

@@ -30,6 +30,29 @@ export async function POST(request: NextRequest) {
   const { project_id } = parsed.data;
   const admin = createAdminClient();
 
+  // Verify human has access to this project's agent
+  const { data: project } = await admin
+    .from("projects")
+    .select("id, name, workspaces!inner(agent_id)")
+    .eq("id", project_id)
+    .single();
+
+  if (!project) {
+    return apiError("NOT_FOUND", "Project not found");
+  }
+
+  const agentId = (project.workspaces as unknown as { agent_id: string }).agent_id;
+  const { data: membership } = await admin
+    .from("agent_members")
+    .select("id")
+    .eq("agent_id", agentId)
+    .eq("human_id", human.id)
+    .single();
+
+  if (!membership) {
+    return apiError("FORBIDDEN", "You don't have access to this project");
+  }
+
   // Check if an active project share link already exists
   const { data: existing } = await admin
     .from("share_links")
@@ -49,13 +72,7 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  // Get project name for slug
-  const { data: project } = await admin
-    .from("projects")
-    .select("name")
-    .eq("id", project_id)
-    .single();
-
+  // Get project name for slug (reuse the project we already fetched)
   const slug =
     generateSlug(project?.name || "project") +
     "-" +

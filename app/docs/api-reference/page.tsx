@@ -34,7 +34,7 @@ const endpoints = [
       { method: "POST", path: "/projects/:id/boards", desc: "Create board" },
       { method: "GET", path: "/projects/:id/boards", desc: "List boards" },
       { method: "GET", path: "/boards/:id", desc: "Get board + screens" },
-      { method: "PATCH", path: "/boards/:id", desc: "Update board" },
+      { method: "PATCH", path: "/boards/:id", desc: "Update or move board" },
       { method: "DELETE", path: "/boards/:id", desc: "Delete board" },
     ],
   },

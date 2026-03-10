@@ -211,11 +211,12 @@ Returns the board and all its screens.
   "description": "Updated",
   "display_name": "My Board",
   "canvas_state": {"offsetX": 100, "offsetY": 50, "zoom": 0.8},
-  "visibility": "public | private"
+  "visibility": "public | private",
+  "project_id": "uuid"
 }
 ```
 
-All fields are optional. `display_name` is a human-facing alias — the agent's original `name` is preserved in the `name` field. `visibility` controls who can see the board:
+All fields are optional. `project_id` moves the board to a different project — the target project must belong to the same agent. `display_name` is a human-facing alias — the agent's original `name` is preserved in the `name` field. `visibility` controls who can see the board:
 - **`public`** (default) — visible via preview links and the dashboard for linked humans
 - **`private`** — only accessible by linked humans and board members. Preview links return 404 for private boards.
 
@@ -235,7 +236,7 @@ Screens are the design artifacts displayed on a board's canvas.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `image` | File | No* | Image file (PNG, JPEG, WebP, SVG, GIF, AVIF). Max 10MB. Dimensions auto-extracted. |
+| `image` | File | No* | Image or animation file (PNG, JPEG, WebP, SVG, GIF, AVIF, Rive (.riv)). Max 10MB. Dimensions auto-extracted. |
 | `html` | String | No* | Raw HTML content. Max 1MB. |
 | `name` | String | **Yes** | Screen name (max 200 chars) |
 | `width` | Number | No | Width in px. Default: 393 |
@@ -491,6 +492,12 @@ List all active share links for a board.
 
 Deactivate a share link. The URL will return 404 after deactivation.
 
+### Project sharing (human-side)
+
+POST /human/project-share  `{ project_id: "uuid" }`
+
+Creates a share link for an entire project (folder). Returns a URL like `spawnboard.com/preview/project/{slug}`. Anyone with the link can see all public boards in the project.
+
 ---
 
 ## Team Management
@@ -648,7 +655,7 @@ All errors return:
 | Max project/board name length | 100 characters |
 | Max description length | 500 characters |
 | Password minimum length | 8 characters |
-| Supported image formats | PNG, JPEG, WebP, SVG, GIF, AVIF |
+| Supported image formats | PNG, JPEG, WebP, SVG, GIF, AVIF, Rive (.riv) |
 
 ---
 
@@ -664,6 +671,7 @@ All errors return:
 | Competitor screenshots | PNG or JPEG | `image` only + `tags=competitor,{app_name}` | No source code needed. Tag for easy filtering. |
 | Design tokens/components | HTML | `source_html` + `source_css` + `context_md` | Document colors, spacing, fonts in context_md. |
 | Wireframes | SVG or PNG | `image` + `description` | Keep descriptions short but specific. |
+| Rive animations | .riv | `image` (the .riv file) + `tags=animation,rive` | Rive files render as live animations on the canvas. No width/height needed — they auto-scale. |
 
 ### Choosing between upload fields
 
