@@ -14,6 +14,8 @@ const updateScreenSchema = z.object({
   source_html: z.string().max(2_000_000).optional(),
   source_css: z.string().max(500_000).optional(),
   context_md: z.string().max(100_000).optional(),
+  tags: z.array(z.string()).optional(),
+  description: z.string().max(500).optional(),
 });
 
 async function getOwnedScreen(supabase: ReturnType<typeof createAdminClient>, screenId: string, agentId: string) {
@@ -61,7 +63,7 @@ export async function PATCH(
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { name?: string, canvas_x?: number, canvas_y?: number, canvas_scale?: number, metadata?: object }", { fix: "Send a valid JSON body with Content-Type: application/json" });
+    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { name?, canvas_x?, canvas_y?, canvas_scale?, metadata?, source_html?, source_css?, context_md?, tags?, description? }", { fix: "Send a valid JSON body with Content-Type: application/json" });
   }
 
   const parsed = updateScreenSchema.safeParse(body);
@@ -78,9 +80,11 @@ export async function PATCH(
   if (parsed.data.source_html !== undefined) updateFields.source_html = parsed.data.source_html;
   if (parsed.data.source_css !== undefined) updateFields.source_css = parsed.data.source_css;
   if (parsed.data.context_md !== undefined) updateFields.context_md = parsed.data.context_md;
+  if (parsed.data.tags !== undefined) updateFields.tags = parsed.data.tags;
+  if (parsed.data.description !== undefined) updateFields.description = parsed.data.description;
 
   if (Object.keys(updateFields).length === 0) {
-    return apiError("BAD_REQUEST", "No fields to update. Accepts: { name?, canvas_x?, canvas_y?, canvas_scale?, metadata?, source_html?, source_css?, context_md? }", { fix: "Include at least one field in your JSON body" });
+    return apiError("BAD_REQUEST", "No fields to update. Accepts: { name?, canvas_x?, canvas_y?, canvas_scale?, metadata?, source_html?, source_css?, context_md?, tags?, description? }", { fix: "Include at least one field in your JSON body" });
   }
 
   const { data: screen, error } = await supabase

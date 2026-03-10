@@ -123,6 +123,8 @@ export async function POST(request: NextRequest) {
             name: "Screen name (required)",
             width: "Width in px (default: 393)",
             height: "Height in px (default: 852)",
+            tags: "Comma-separated tags (e.g. 'icon,illustration')",
+            description: "Short description (max 500 chars)",
             source_html: "HTML source code (max 2MB) — enables live rendering on canvas",
             source_css: "CSS styles (max 500KB) — injected into source_html",
             context_md: "Markdown context (max 100KB) — intent, components, design tokens for agents",

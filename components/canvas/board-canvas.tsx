@@ -26,6 +26,12 @@ export interface Screen {
   source_html: string | null;
   source_css: string | null;
   context_md: string | null;
+  thumbnail_url: string | null;
+  file_type: string | null;
+  file_size: number | null;
+  original_name: string | null;
+  tags: string[];
+  description: string | null;
 }
 
 export interface Comment {

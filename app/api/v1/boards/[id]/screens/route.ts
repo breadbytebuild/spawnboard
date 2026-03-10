@@ -3,7 +3,7 @@ import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
-import { uploadScreenImage, uploadHtmlFile } from "@/lib/storage";
+import { uploadScreenImage, uploadHtmlFile, ALLOWED_IMAGE_TYPES, extractDimensions, getExtFromContentType } from "@/lib/storage";
 import { autoLayoutPosition } from "@/lib/canvas/layout";
 
 const createScreenSchema = z.object({
@@ -13,6 +13,8 @@ const createScreenSchema = z.object({
   canvas_x: z.coerce.number().optional(),
   canvas_y: z.coerce.number().optional(),
   metadata: z.string().optional(),
+  tags: z.string().optional(),
+  description: z.string().max(500).optional(),
   source_html: z.string().max(2_000_000).optional(),
   source_css: z.string().max(500_000).optional(),
   context_md: z.string().max(100_000).optional(),
@@ -89,6 +91,8 @@ export async function POST(
     canvas_x: getString("canvas_x"),
     canvas_y: getString("canvas_y"),
     metadata: getString("metadata"),
+    tags: getString("tags"),
+    description: getString("description"),
     source_html: getString("source_html"),
     source_css: getString("source_css"),
     context_md: getString("context_md"),
@@ -99,7 +103,12 @@ export async function POST(
     return zodApiError(parsed.error, "screen upload");
   }
 
-  const { name, width = 393, height = 852, metadata, source_html, source_css, context_md } = parsed.data;
+  let { name, width = 393, height = 852, metadata, source_html, source_css, context_md } = parsed.data;
+
+  const parsedTags = parsed.data.tags
+    ? parsed.data.tags.split(",").map(t => t.trim()).filter(Boolean)
+    : [];
+
   const imageFile = formData.get("image");
   const htmlContent = formData.get("html") as string | null;
 
@@ -109,7 +118,6 @@ export async function POST(
 
   const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
   const MAX_HTML_SIZE = 1 * 1024 * 1024; // 1MB
-  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
 
   if (imageFile && imageFile instanceof File) {
     if (imageFile.size > MAX_IMAGE_SIZE) {
@@ -136,17 +144,27 @@ export async function POST(
   const screenId = crypto.randomUUID();
   let imageUrl: string | null = null;
   let htmlUrl: string | null = null;
+  let thumbnailUrl: string | null = null;
+  let fileSize: number | null = null;
+  let fileType: string | null = null;
+  let originalName: string | null = null;
 
   try {
     if (imageFile && imageFile instanceof File) {
       const buffer = Buffer.from(await imageFile.arrayBuffer());
-      imageUrl = await uploadScreenImage(
-        agent.id,
-        boardId,
-        screenId,
-        buffer,
-        imageFile.type
-      );
+
+      const dims = extractDimensions(buffer, imageFile.type);
+      if (dims) {
+        width = dims.width;
+        height = dims.height;
+      }
+
+      const uploadResult = await uploadScreenImage(agent.id, boardId, screenId, buffer, imageFile.type);
+      imageUrl = uploadResult.url;
+      thumbnailUrl = uploadResult.thumbnailUrl;
+      fileSize = uploadResult.fileSize;
+      fileType = getExtFromContentType(imageFile.type);
+      originalName = imageFile.name || null;
     }
 
     if (htmlContent) {
@@ -198,6 +216,12 @@ export async function POST(
       source_html: source_html || null,
       source_css: source_css || null,
       context_md: context_md || null,
+      file_type: fileType || (htmlContent ? 'html' : null),
+      file_size: fileSize || (htmlContent ? htmlContent.length : null),
+      original_name: originalName,
+      thumbnail_url: thumbnailUrl,
+      tags: parsedTags,
+      description: parsed.data.description || null,
     })
     .select()
     .single();

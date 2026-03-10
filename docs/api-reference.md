@@ -243,6 +243,8 @@ Screens are the design artifacts displayed on a board's canvas.
 | `canvas_x` | Number | No | X position on canvas. Auto-laid out if omitted. |
 | `canvas_y` | Number | No | Y position on canvas. Auto-laid out if omitted. |
 | `metadata` | JSON string | No | Arbitrary metadata as a JSON string. |
+| `tags` | String | No | Comma-separated tags (e.g. "icon,illustration,v2"). Stored as array. |
+| `description` | String | No | Short description (max 500 chars) |
 | `source_html` | String | No | HTML source code (max 2MB). Enables live iframe rendering on canvas. |
 | `source_css` | String | No | CSS styles (max 500KB). Injected into source_html for live rendering. |
 | `context_md` | String | No | Markdown context for agents (max 100KB). Intent, components, design tokens. |
@@ -268,9 +270,13 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
     "id": "uuid",
     "board_id": "uuid",
     "name": "Welcome Screen",
+    "original_name": "screen.png",
     "image_url": "https://mguezzsmburlppmbqjga.supabase.co/storage/v1/object/public/screens/...",
+    "thumbnail_url": "https://mguezzsmburlppmbqjga.supabase.co/storage/v1/object/public/screens/.../thumb.webp",
     "html_url": null,
     "source_type": "image",
+    "file_type": "image/png",
+    "file_size": 245760,
     "width": 393,
     "height": 852,
     "canvas_x": 0,
@@ -278,6 +284,8 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
     "canvas_scale": 1,
     "sort_order": 0,
     "metadata": {},
+    "tags": [],
+    "description": null,
     "source_html": null,
     "source_css": null,
     "context_md": null,
@@ -303,13 +311,17 @@ Create multiple screens at once from JSON. Use pre-hosted image URLs (the images
       "width": 393,
       "height": 852,
       "canvas_x": 0,
-      "canvas_y": 0
+      "canvas_y": 0,
+      "tags": ["onboarding", "v2"],
+      "description": "Welcome screen with hero illustration"
     },
     {
       "name": "Your Name",
       "image_url": "https://example.com/name.png",
       "canvas_x": 433,
       "canvas_y": 0,
+      "tags": ["onboarding", "form"],
+      "description": "Name input step",
       "source_html": "<!DOCTYPE html><html>...</html>",
       "source_css": ".container { display: flex; }",
       "context_md": "# Your Name Screen\nCollects the user's display name..."
@@ -347,6 +359,35 @@ List all screens on a board. Ordered by `sort_order`, then `created_at`.
 
 Get a single screen with all its data.
 
+### GET /screens/:id/download
+
+Get a signed download URL for the screen's original file.
+
+**Response:**
+```json
+{
+  "download_url": "https://...",
+  "filename": "welcome-screen.png",
+  "file_type": "image/png",
+  "file_size": 245760
+}
+```
+
+### GET /screens/:id/history
+
+Get version history for a screen (ordered newest first).
+
+**Response:**
+```json
+{
+  "versions": [
+    { "id": "uuid", "version": 3, "image_url": "https://...", "file_size": 245760, "created_at": "..." },
+    { "id": "uuid", "version": 2, "image_url": "https://...", "file_size": 198400, "created_at": "..." },
+    { "id": "uuid", "version": 1, "image_url": "https://...", "file_size": 310200, "created_at": "..." }
+  ]
+}
+```
+
 ### PATCH /screens/:id
 
 Update a screen's properties, position, or source files.
@@ -357,6 +398,8 @@ Update a screen's properties, position, or source files.
   "canvas_x": 100,
   "canvas_y": 200,
   "canvas_scale": 0.8,
+  "tags": ["updated", "v2"],
+  "description": "Revised layout with new header component",
   "source_html": "<!DOCTYPE html><html>...</html>",
   "source_css": ".container { display: flex; }",
   "context_md": "# Updated Screen\nRevised layout with new component hierarchy..."
@@ -605,7 +648,7 @@ All errors return:
 | Max project/board name length | 100 characters |
 | Max description length | 500 characters |
 | Password minimum length | 8 characters |
-| Supported image formats | PNG, JPEG, WebP |
+| Supported image formats | PNG, JPEG, WebP, SVG, GIF, AVIF |
 
 ---
 

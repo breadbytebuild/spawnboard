@@ -83,24 +83,31 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
       <div className="relative z-10 w-full sm:w-[90vw] max-w-5xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col bg-surface border-0 sm:border border-border sm:rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
-          <div className="flex items-center gap-3 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-wrap">
             <h2 className="text-sm font-semibold text-text-primary truncate">
               {screen.name}
             </h2>
-            <span className="text-[11px] text-text-tertiary font-mono shrink-0">
-              {screen.width}x{screen.height}
-            </span>
 
-            {/* Always-visible asset type indicator */}
+            {/* Asset info badges */}
             <div className="flex items-center gap-1.5 shrink-0">
-              {hasImage && (
-                <span className="text-[10px] font-mono bg-surface-elevated text-text-secondary px-1.5 py-0.5 rounded border border-border">
-                  IMG
+              {screen.file_type && (
+                <span className="text-[10px] font-mono bg-surface-elevated text-text-secondary px-1.5 py-0.5 rounded border border-border uppercase">
+                  {screen.file_type}
                 </span>
               )}
-              {hasHtml && (
+              <span className="text-[10px] text-text-tertiary font-mono">
+                {screen.width}x{screen.height}
+              </span>
+              {screen.file_size && (
+                <span className="text-[10px] text-text-tertiary font-mono">
+                  {screen.file_size > 1_000_000
+                    ? `${(screen.file_size / 1_000_000).toFixed(1)}MB`
+                    : `${Math.round(screen.file_size / 1024)}KB`}
+                </span>
+              )}
+              {hasSourceHtml && (
                 <span className="text-[10px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
-                  {hasSourceHtml ? "HTML" : "LIVE"}
+                  HTML
                 </span>
               )}
               {hasCss && (
@@ -113,18 +120,31 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
                   CONTEXT
                 </span>
               )}
-              {!hasImage && !hasHtml && (
-                <span className="text-[10px] font-mono bg-surface-elevated text-text-tertiary px-1.5 py-0.5 rounded border border-border">
-                  NO PREVIEW
-                </span>
-              )}
             </div>
+
+            {/* Tags */}
+            {screen.tags && screen.tags.length > 0 && (
+              <div className="flex items-center gap-1 flex-wrap">
+                {screen.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="text-[9px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-1">
-            {screen.image_url && (
+            {(screen.image_url || screen.html_url) && (
               <Button variant="ghost" size="icon" asChild>
-                <a href={screen.image_url} target="_blank" rel="noopener noreferrer" aria-label="Download image">
+                <a
+                  href={screen.image_url || screen.html_url!}
+                  download={screen.original_name || `${screen.name}.${screen.file_type || "png"}`}
+                  aria-label="Download asset"
+                >
                   <Download className="w-4 h-4" />
                 </a>
               </Button>

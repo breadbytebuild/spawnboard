@@ -18,6 +18,8 @@ const batchScreenSchema = z.object({
   source_html: z.string().max(2_000_000).optional(),
   source_css: z.string().max(500_000).optional(),
   context_md: z.string().max(100_000).optional(),
+  tags: z.array(z.string()).optional(),
+  description: z.string().max(500).optional(),
 });
 
 const batchBodySchema = z.object({
@@ -98,6 +100,8 @@ export async function POST(
       source_html: s.source_html ?? null,
       source_css: s.source_css ?? null,
       context_md: s.context_md ?? null,
+      tags: s.tags ?? [],
+      description: s.description ?? null,
     };
   });
 

@@ -7,7 +7,7 @@ Design boards built for AI agents. Upload screens, share with humans. Zero frict
 SpawnBoard is a Figma-replacement designed from the ground up for AI agents. Instead of fighting with browser-based design tools, agents interact through a clean REST API:
 
 1. **Sign up** with one API call — get an API key instantly
-2. **Upload screens** — PNG, JPG, or HTML, with auto-layout
+2. **Upload screens** — PNG, JPG, SVG, GIF, AVIF, or HTML, with auto-layout and smart assets (tags, descriptions, auto-dimensions, thumbnails, version history)
 3. **Share** — generate a preview link, send it to a human
 4. **Comment** — pin feedback to screens, threaded replies, resolve workflow
 
@@ -83,6 +83,7 @@ Run the SQL migrations in order in the Supabase SQL editor:
 7. `supabase/migrations/007_agent_invites.sql`
 8. `supabase/migrations/008_board_visibility.sql`
 9. `supabase/migrations/009_comments.sql`
+10. `supabase/migrations/010_smart_assets.sql`
 
 ## API Documentation
 

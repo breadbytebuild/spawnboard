@@ -34,7 +34,7 @@ export default async function BoardPage({ params }: Props) {
   const { data: screens } = await supabase
     .from("screens")
     .select(
-      "id, name, image_url, html_url, source_type, width, height, canvas_x, canvas_y, canvas_scale, sort_order, metadata, source_html, source_css, context_md"
+      "id, name, image_url, html_url, source_type, width, height, canvas_x, canvas_y, canvas_scale, sort_order, metadata, source_html, source_css, context_md, thumbnail_url, file_type, file_size, original_name, tags, description"
     )
     .eq("board_id", id)
     .order("sort_order")
@@ -70,6 +70,12 @@ export default async function BoardPage({ params }: Props) {
           source_html: s.source_html ?? null,
           source_css: s.source_css ?? null,
           context_md: s.context_md ?? null,
+          thumbnail_url: s.thumbnail_url ?? null,
+          file_type: s.file_type ?? null,
+          file_size: s.file_size ?? null,
+          original_name: s.original_name ?? null,
+          tags: (s.tags as string[]) || [],
+          description: s.description ?? null,
         }))}
         comments={(comments || []).map((c) => ({
           id: c.id,

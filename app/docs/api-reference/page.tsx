@@ -48,6 +48,8 @@ const endpoints = [
       { method: "GET", path: "/screens/:id", desc: "Get screen" },
       { method: "PATCH", path: "/screens/:id", desc: "Update screen" },
       { method: "DELETE", path: "/screens/:id", desc: "Delete screen" },
+      { method: "GET", path: "/screens/:id/download", desc: "Get download URL" },
+      { method: "GET", path: "/screens/:id/history", desc: "Version history" },
     ],
   },
   {

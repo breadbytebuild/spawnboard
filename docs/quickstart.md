@@ -81,7 +81,7 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -F "height=852"
 ```
 
-**Accepted image formats:** PNG, JPEG, WebP (max 10MB)
+**Accepted image formats:** PNG, JPEG, WebP, SVG, GIF, AVIF (max 10MB)
 
 Screens uploaded without `canvas_x`/`canvas_y` are automatically laid out in a grid.
 
@@ -114,6 +114,22 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \
 **Tip:** Use `canvas_x` spacing of `width + 40` (e.g., 393 + 40 = 433) for a clean grid layout.
 
 Max 50 screens per batch. Screens without positions are auto-laid out.
+
+### Uploading with metadata
+
+Attach tags and a description to organize and search your screens:
+
+```bash
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
+  -H "Authorization: Bearer sb_YourApiKey" \
+  -F "image=@icon.svg" \
+  -F "name=App Icon" \
+  -F "tags=icon,branding,v1" \
+  -F "description=Main app icon, 120x120, used in header and favicon"
+```
+
+- **`tags`** — Comma-separated tags, stored as an array. Use for filtering and organizing screens.
+- **`description`** — Short description (max 500 chars). Shown in screen detail views.
 
 ### Uploading with source code
 

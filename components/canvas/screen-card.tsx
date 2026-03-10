@@ -146,7 +146,11 @@ export function ScreenCard({
 
         {renderMode === "image" && (
           <Image
-            src={screen.image_url!}
+            src={
+              zoom < 0.5 && screen.thumbnail_url
+                ? screen.thumbnail_url
+                : screen.image_url!
+            }
             alt={screen.name}
             width={screen.width}
             height={screen.height}
@@ -196,11 +200,16 @@ export function ScreenCard({
             {screen.name}
           </p>
 
-          {showBadges && (hasCode || hasContext) && (
+          {showBadges && (
             <div
               className="flex items-center justify-center gap-1 mt-1 transition-opacity duration-150"
               style={{ opacity: Math.min((zoom - 0.4) * 4, 1) }}
             >
+              {screen.file_type && (
+                <span className="text-[9px] font-mono bg-surface-elevated text-text-tertiary px-1 py-0.5 rounded leading-none border border-border/50 uppercase">
+                  {screen.file_type}
+                </span>
+              )}
               {hasCode && (
                 <span className="text-[9px] font-mono bg-accent-muted text-accent px-1 py-0.5 rounded leading-none">
                   CODE
