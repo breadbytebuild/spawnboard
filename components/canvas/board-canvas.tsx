@@ -240,7 +240,7 @@ export function BoardCanvas({
 
     const candidates = screens
       .filter(
-        (s) => !!s.source_html && isScreenInViewport(s, viewportRect)
+        (s) => (!!s.source_html || !!s.html_url) && isScreenInViewport(s, viewportRect)
       )
       .map((s) => ({
         id: s.id,

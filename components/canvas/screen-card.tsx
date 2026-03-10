@@ -32,16 +32,21 @@ export function ScreenCard({
   const hasCode = !!screen.source_html || !!screen.source_css;
   const hasContext = !!screen.context_md;
 
-  const canRenderLive = isLiveEligible && !!screen.source_html;
+  const canRenderLiveSrcDoc = isLiveEligible && !!screen.source_html;
+  const canRenderLiveUrl = isLiveEligible && !!screen.html_url;
   const hasImage = !!screen.image_url;
 
-  // Prefer live iframe when near viewport and HTML is available.
-  // Fall back to image. Fall back to placeholder.
-  const renderMode: "iframe" | "image" | "placeholder" = canRenderLive
-    ? "iframe"
-    : hasImage
-      ? "image"
-      : "placeholder";
+  // Priority: inline srcDoc iframe > hosted html_url iframe > image > placeholder
+  const renderMode: "iframe-srcdoc" | "iframe-url" | "image" | "placeholder" =
+    canRenderLiveSrcDoc
+      ? "iframe-srcdoc"
+      : canRenderLiveUrl
+        ? "iframe-url"
+        : hasImage
+          ? "image"
+          : !!screen.html_url
+            ? "iframe-url" // even if not live-eligible, it's the only content
+            : "placeholder";
 
   const iframeSrcDoc = useMemo(() => {
     if (!screen.source_html) return "";
@@ -64,11 +69,11 @@ export function ScreenCard({
   }, [screen.source_html, screen.source_css]);
 
   const [iframeLoaded, setIframeLoaded] = useState(false);
+  const isIframe = renderMode === "iframe-srcdoc" || renderMode === "iframe-url";
 
-  // Reset iframeLoaded when the screen leaves live mode
   useEffect(() => {
-    if (!canRenderLive) setIframeLoaded(false);
-  }, [canRenderLive]);
+    if (!isIframe) setIframeLoaded(false);
+  }, [isIframe]);
 
   return (
     <div
@@ -91,9 +96,8 @@ export function ScreenCard({
           "relative"
         )}
       >
-        {renderMode === "iframe" && (
+        {renderMode === "iframe-srcdoc" && (
           <>
-            {/* Image underneath as loading fallback */}
             {hasImage && (
               <Image
                 src={screen.image_url!}
@@ -109,6 +113,35 @@ export function ScreenCard({
             )}
             <iframe
               srcDoc={iframeSrcDoc}
+              title={screen.name}
+              className={cn(
+                "w-full h-full border-0 pointer-events-none transition-opacity duration-300",
+                iframeLoaded ? "opacity-100" : "opacity-0"
+              )}
+              sandbox=""
+              loading="lazy"
+              onLoad={() => setIframeLoaded(true)}
+            />
+          </>
+        )}
+
+        {renderMode === "iframe-url" && (
+          <>
+            {hasImage && (
+              <Image
+                src={screen.image_url!}
+                alt={screen.name}
+                width={screen.width}
+                height={screen.height}
+                className={cn(
+                  "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
+                  iframeLoaded ? "opacity-0" : "opacity-100"
+                )}
+                unoptimized
+              />
+            )}
+            <iframe
+              src={screen.html_url!}
               title={screen.name}
               className={cn(
                 "w-full h-full border-0 pointer-events-none transition-opacity duration-300",
@@ -156,7 +189,7 @@ export function ScreenCard({
         )}
 
         {/* Live indicator dot */}
-        {renderMode === "iframe" && iframeLoaded && (
+        {isIframe && iframeLoaded && (
           <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5">
             <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
             <span className="text-[8px] font-mono text-white/70">LIVE</span>
