@@ -26,6 +26,7 @@ export function BoardCanvasWrapper({
   const router = useRouter();
   const [screens, setScreens] = useState(initialScreens);
   const [comments, setComments] = useState(initialComments);
+  const [currentBoardName, setCurrentBoardName] = useState(boardName);
 
   const canComment = !!humanId;
 
@@ -45,6 +46,18 @@ export function BoardCanvasWrapper({
       }).catch(() => {});
     },
     []
+  );
+
+  const handleBoardRename = useCallback(
+    async (name: string) => {
+      setCurrentBoardName(name);
+      await fetch("/api/v1/human/board-rename", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ board_id: boardId, display_name: name }),
+      }).catch(() => {});
+    },
+    [boardId]
   );
 
   const handleAddComment = useCallback(
@@ -163,10 +176,11 @@ export function BoardCanvasWrapper({
   return (
     <BoardCanvas
       screens={screens}
-      boardName={boardName}
+      boardName={currentBoardName}
       readOnly={readOnly}
       comments={comments}
       onScreenMove={readOnly ? undefined : handleScreenMove}
+      onBoardRename={readOnly ? undefined : handleBoardRename}
       onAddComment={canComment ? handleAddComment : undefined}
       onReplyComment={canComment ? handleReplyComment : undefined}
       onResolveComment={canComment ? handleResolveComment : undefined}

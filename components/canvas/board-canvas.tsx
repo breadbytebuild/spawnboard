@@ -8,6 +8,7 @@ import { CommentPins } from "./comment-pins";
 import { CommentPanel } from "./comment-panel";
 import { MIN_ZOOM, MAX_ZOOM, clampZoom } from "@/lib/canvas/viewport";
 import { fitToViewBounds } from "@/lib/canvas/layout";
+import { cn } from "@/lib/utils";
 
 export interface Screen {
   id: string;
@@ -59,6 +60,7 @@ interface BoardCanvasProps {
   onEditComment?: (commentId: string, content: string) => void;
   onDeleteComment?: (commentId: string) => void;
   onScreenMove?: (screenId: string, x: number, y: number) => void;
+  onBoardRename?: (name: string) => void;
 }
 
 interface ViewportRect {
@@ -125,6 +127,74 @@ function screenAtPoint(
     }
   }
   return undefined;
+}
+
+function EditableBoardName({
+  name,
+  onRename,
+  readOnly,
+}: {
+  name: string;
+  onRename?: (name: string) => void;
+  readOnly?: boolean;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(name);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (editing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [editing]);
+
+  const handleSave = () => {
+    const trimmed = value.trim();
+    if (trimmed && trimmed !== name) {
+      onRename?.(trimmed);
+    } else {
+      setValue(name);
+    }
+    setEditing(false);
+  };
+
+  if (editing) {
+    return (
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onBlur={handleSave}
+        onKeyDown={(e) => {
+          if (e.key === "Enter") handleSave();
+          if (e.key === "Escape") {
+            setValue(name);
+            setEditing(false);
+          }
+        }}
+        className="text-sm font-medium text-text-primary bg-surface border border-accent rounded-md px-2 py-0.5 outline-none w-64"
+      />
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        if (!readOnly && onRename) setEditing(true);
+      }}
+      className={cn(
+        "text-sm font-medium text-text-secondary px-2 py-0.5 rounded-md transition-colors",
+        !readOnly && onRename
+          ? "hover:text-text-primary hover:bg-surface cursor-text"
+          : "cursor-default"
+      )}
+      title={!readOnly && onRename ? "Click to rename" : undefined}
+    >
+      {name}
+    </button>
+  );
 }
 
 function CommentInputPopover({
@@ -213,6 +283,7 @@ export function BoardCanvas({
   onEditComment,
   onDeleteComment,
   onScreenMove,
+  onBoardRename,
 }: BoardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -606,9 +677,11 @@ export function BoardCanvas({
       />
 
       <div className="absolute top-4 left-4 flex items-center gap-3">
-        <h1 className="text-sm font-medium text-text-secondary">
-          {boardName}
-        </h1>
+        <EditableBoardName
+          name={boardName}
+          onRename={onBoardRename}
+          readOnly={readOnly}
+        />
         {!readOnly && (
           <span className="text-xs text-text-tertiary font-mono">
             {screens.length} screen{screens.length !== 1 ? "s" : ""}
