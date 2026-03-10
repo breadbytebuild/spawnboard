@@ -39,6 +39,7 @@ export async function GET(
 
 const updateBoardSchema = z.object({
   name: z.string().min(1).max(100).optional(),
+  display_name: z.string().min(1).max(100).optional(),
   description: z.string().max(500).optional(),
   canvas_state: z.record(z.string(), z.unknown()).optional(),
   visibility: z.enum(["public", "private"]).optional(),
@@ -84,14 +85,14 @@ export async function PATCH(
 
   const updates = parsed.data;
   if (Object.keys(updates).length === 0) {
-    return apiError("BAD_REQUEST", "No fields to update. Provide at least one of: name, description, canvas_state, visibility", { fix: "Include at least one field in your JSON body" });
+    return apiError("BAD_REQUEST", "No fields to update. Provide at least one of: name, display_name, description, canvas_state, visibility", { fix: "Include at least one field in your JSON body" });
   }
 
   const { data: board, error } = await supabase
     .from("boards")
     .update(updates)
     .eq("id", id)
-    .select("id, project_id, name, description, canvas_state, visibility, sort_order, created_at, updated_at")
+    .select("id, project_id, name, display_name, description, canvas_state, visibility, sort_order, created_at, updated_at")
     .single();
 
   if (error) {

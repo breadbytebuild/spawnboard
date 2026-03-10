@@ -5,6 +5,7 @@ import {
   ZoomOut,
   Maximize,
   Grid3X3,
+  MessageCircle,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -13,11 +14,13 @@ interface CanvasToolbarProps {
   minZoom: number;
   maxZoom: number;
   showGrid: boolean;
+  commentMode?: boolean;
   onZoomIn: () => void;
   onZoomOut: () => void;
   onFitToView: () => void;
   onZoomTo: (value: number) => void;
   onToggleGrid: () => void;
+  onToggleCommentMode?: () => void;
 }
 
 export function CanvasToolbar({
@@ -25,11 +28,13 @@ export function CanvasToolbar({
   minZoom,
   maxZoom,
   showGrid,
+  commentMode = false,
   onZoomIn,
   onZoomOut,
   onFitToView,
   onZoomTo,
   onToggleGrid,
+  onToggleCommentMode,
 }: CanvasToolbarProps) {
   const zoomPercent = Math.round(zoom * 100);
 
@@ -72,6 +77,19 @@ export function CanvasToolbar({
       >
         <Grid3X3 className="w-4 h-4" />
       </ToolbarButton>
+
+      {onToggleCommentMode && (
+        <>
+          <div className="w-px h-5 bg-border mx-1" />
+          <ToolbarButton
+            onClick={onToggleCommentMode}
+            active={commentMode}
+            tooltip="Comment mode"
+          >
+            <MessageCircle className="w-4 h-4" />
+          </ToolbarButton>
+        </>
+      )}
     </div>
   );
 }

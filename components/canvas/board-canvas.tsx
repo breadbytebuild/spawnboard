@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScreenCard } from "./screen-card";
 import { CanvasToolbar } from "./canvas-toolbar";
 import { ScreenInspector } from "./screen-inspector";
+import { CommentPins } from "./comment-pins";
+import { CommentPanel } from "./comment-panel";
 import { MIN_ZOOM, MAX_ZOOM, clampZoom } from "@/lib/canvas/viewport";
 import { fitToViewBounds } from "@/lib/canvas/layout";
 
@@ -25,10 +27,38 @@ export interface Screen {
   context_md: string | null;
 }
 
+export interface Comment {
+  id: string;
+  pin_type: "screen" | "canvas";
+  screen_id: string | null;
+  pin_x: number;
+  pin_y: number;
+  author_type: "human" | "agent";
+  author_name: string;
+  content: string;
+  parent_id: string | null;
+  is_resolved: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 interface BoardCanvasProps {
   screens: Screen[];
   boardName: string;
   readOnly?: boolean;
+  comments?: Comment[];
+  onAddComment?: (comment: {
+    pin_type: string;
+    screen_id?: string;
+    pin_x: number;
+    pin_y: number;
+    content: string;
+  }) => void;
+  onResolveComment?: (commentId: string, resolved: boolean) => void;
+  onReplyComment?: (parentId: string, content: string) => void;
+  onEditComment?: (commentId: string, content: string) => void;
+  onDeleteComment?: (commentId: string) => void;
+  onScreenMove?: (screenId: string, x: number, y: number) => void;
 }
 
 interface ViewportRect {
@@ -38,9 +68,19 @@ interface ViewportRect {
   bottom: number;
 }
 
+interface CommentInput {
+  canvasX: number;
+  canvasY: number;
+  clientX: number;
+  clientY: number;
+  screenId?: string;
+  pinX: number;
+  pinY: number;
+}
+
 const VIEWPORT_BUFFER = 1.5;
 const MAX_LIVE_IFRAMES = 12;
-const IFRAME_MIN_ZOOM = 0.25; // Below this zoom, no iframes at all
+const IFRAME_MIN_ZOOM = 0.25;
 
 function distanceToViewportCenter(
   screen: Screen,
@@ -66,10 +106,110 @@ function isScreenInViewport(
   );
 }
 
+function screenAtPoint(
+  screens: Screen[],
+  canvasX: number,
+  canvasY: number
+): Screen | undefined {
+  for (let i = screens.length - 1; i >= 0; i--) {
+    const s = screens[i];
+    const sw = s.width * s.canvas_scale;
+    const sh = s.height * s.canvas_scale;
+    if (
+      canvasX >= s.canvas_x &&
+      canvasX <= s.canvas_x + sw &&
+      canvasY >= s.canvas_y &&
+      canvasY <= s.canvas_y + sh
+    ) {
+      return s;
+    }
+  }
+  return undefined;
+}
+
+function CommentInputPopover({
+  position,
+  onSubmit,
+  onCancel,
+}: {
+  position: { x: number; y: number };
+  onSubmit: (content: string) => void;
+  onCancel: () => void;
+}) {
+  const [content, setContent] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onCancel();
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onCancel]);
+
+  const handleSubmit = () => {
+    const trimmed = content.trim();
+    if (!trimmed) return;
+    onSubmit(trimmed);
+  };
+
+  return (
+    <div
+      className="absolute z-50 bg-surface border border-border rounded-xl shadow-2xl shadow-black/50 p-3 w-64"
+      style={{ left: position.x, top: position.y }}
+      onClick={(e) => e.stopPropagation()}
+      onMouseDown={(e) => e.stopPropagation()}
+    >
+      <textarea
+        ref={inputRef}
+        value={content}
+        onChange={(e) => setContent(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            handleSubmit();
+          }
+        }}
+        placeholder="Add a comment..."
+        rows={2}
+        className="w-full bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent"
+      />
+      <div className="flex items-center justify-end gap-2 mt-2">
+        <button
+          type="button"
+          onClick={onCancel}
+          className="text-xs text-text-tertiary hover:text-text-secondary transition-colors cursor-pointer px-2 py-1"
+        >
+          Cancel
+        </button>
+        <button
+          type="button"
+          onClick={handleSubmit}
+          disabled={!content.trim()}
+          className="text-xs font-medium text-accent hover:text-accent-hover disabled:opacity-30 transition-colors cursor-pointer px-2 py-1"
+        >
+          Comment
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export function BoardCanvas({
   screens,
   boardName,
   readOnly = false,
+  comments = [],
+  onAddComment,
+  onResolveComment,
+  onReplyComment,
+  onEditComment,
+  onDeleteComment,
+  onScreenMove,
 }: BoardCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [offset, setOffset] = useState({ x: 0, y: 0 });
@@ -78,6 +218,17 @@ export function BoardCanvas({
   const panStartRef = useRef({ x: 0, y: 0 });
   const [selectedScreen, setSelectedScreen] = useState<Screen | null>(null);
   const [showGrid, setShowGrid] = useState(true);
+
+  // Comment state
+  const [commentMode, setCommentMode] = useState(false);
+  const [selectedComment, setSelectedComment] = useState<Comment | null>(null);
+  const [commentInput, setCommentInput] = useState<CommentInput | null>(null);
+
+  // Drag state
+  const [draggingScreenId, setDraggingScreenId] = useState<string | null>(null);
+  const [dragDelta, setDragDelta] = useState({ dx: 0, dy: 0 });
+  const dragDeltaRef = useRef({ dx: 0, dy: 0 });
+  const dragStartRef = useRef({ canvasX: 0, canvasY: 0, screenX: 0, screenY: 0 });
 
   const offsetRef = useRef(offset);
   const zoomRef = useRef(zoom);
@@ -88,7 +239,6 @@ export function BoardCanvas({
     zoomRef.current = zoom;
   }, [zoom]);
 
-  // Compute the visible canvas rect (in canvas coordinates) with a buffer
   const viewportRect = useMemo((): ViewportRect => {
     const el = containerRef.current;
     if (!el) return { left: -1e6, top: -1e6, right: 1e6, bottom: 1e6 };
@@ -149,6 +299,7 @@ export function BoardCanvas({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  // Pan handling
   useEffect(() => {
     if (!isPanning) return;
 
@@ -171,8 +322,58 @@ export function BoardCanvas({
     };
   }, [isPanning]);
 
+  // Screen drag handling
+  useEffect(() => {
+    if (!draggingScreenId) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const el = containerRef.current;
+      if (!el) return;
+      const rect = el.getBoundingClientRect();
+      const canvasX = (e.clientX - rect.left - offsetRef.current.x) / zoomRef.current;
+      const canvasY = (e.clientY - rect.top - offsetRef.current.y) / zoomRef.current;
+      const next = {
+        dx: canvasX - dragStartRef.current.canvasX,
+        dy: canvasY - dragStartRef.current.canvasY,
+      };
+      dragDeltaRef.current = next;
+      setDragDelta(next);
+    };
+
+    const onMouseUp = () => {
+      const { dx, dy } = dragDeltaRef.current;
+      const finalX = dragStartRef.current.screenX + dx;
+      const finalY = dragStartRef.current.screenY + dy;
+      onScreenMove?.(draggingScreenId, Math.round(finalX), Math.round(finalY));
+      setDraggingScreenId(null);
+      setDragDelta({ dx: 0, dy: 0 });
+      dragDeltaRef.current = { dx: 0, dy: 0 };
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [draggingScreenId, onScreenMove]);
+
+  const clientToCanvas = useCallback(
+    (clientX: number, clientY: number) => {
+      const el = containerRef.current;
+      if (!el) return { x: 0, y: 0 };
+      const rect = el.getBoundingClientRect();
+      return {
+        x: (clientX - rect.left - offset.x) / zoom,
+        y: (clientY - rect.top - offset.y) / zoom,
+      };
+    },
+    [offset, zoom]
+  );
+
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
+      // Middle-click or alt+click = pan
       if (e.button === 1 || (e.button === 0 && e.altKey)) {
         e.preventDefault();
         setIsPanning(true);
@@ -180,9 +381,60 @@ export function BoardCanvas({
           x: e.clientX - offset.x,
           y: e.clientY - offset.y,
         };
+        return;
+      }
+
+      if (e.button !== 0) return;
+
+      const canvasPos = clientToCanvas(e.clientX, e.clientY);
+
+      // Comment mode: place a comment
+      if (commentMode && onAddComment) {
+        const target = screenAtPoint(screens, canvasPos.x, canvasPos.y);
+        setCommentInput({
+          canvasX: canvasPos.x,
+          canvasY: canvasPos.y,
+          clientX: e.clientX,
+          clientY: e.clientY,
+          screenId: target?.id,
+          pinX: target ? canvasPos.x - target.canvas_x : canvasPos.x,
+          pinY: target ? canvasPos.y - target.canvas_y : canvasPos.y,
+        });
+        return;
+      }
+
+      // Screen dragging (not readOnly, not commentMode)
+      if (!readOnly && !commentMode && onScreenMove) {
+        const target = screenAtPoint(screens, canvasPos.x, canvasPos.y);
+        if (target) {
+          e.preventDefault();
+          setDraggingScreenId(target.id);
+          dragStartRef.current = {
+            canvasX: canvasPos.x,
+            canvasY: canvasPos.y,
+            screenX: target.canvas_x,
+            screenY: target.canvas_y,
+          };
+          return;
+        }
       }
     },
-    [offset]
+    [offset, commentMode, onAddComment, readOnly, onScreenMove, screens, clientToCanvas]
+  );
+
+  const handleCommentSubmit = useCallback(
+    (content: string) => {
+      if (!commentInput || !onAddComment) return;
+      onAddComment({
+        pin_type: commentInput.screenId ? "screen" : "canvas",
+        screen_id: commentInput.screenId,
+        pin_x: commentInput.pinX,
+        pin_y: commentInput.pinY,
+        content,
+      });
+      setCommentInput(null);
+    },
+    [commentInput, onAddComment]
   );
 
   const handleZoomIn = useCallback(() => {
@@ -229,9 +481,6 @@ export function BoardCanvas({
     [zoom, offset]
   );
 
-  // Compute which screens are eligible for live iframe rendering.
-  // Hard cap of MAX_LIVE_IFRAMES, prioritized by distance to viewport center.
-  // Below IFRAME_MIN_ZOOM, no iframes render at all (everything is image/placeholder).
   const liveIframeIds = useMemo(() => {
     if (zoom < IFRAME_MIN_ZOOM) return new Set<string>();
 
@@ -252,14 +501,30 @@ export function BoardCanvas({
     return new Set(candidates.map((c) => c.id));
   }, [screens, viewportRect, zoom]);
 
+  const replies = useMemo(() => {
+    if (!selectedComment) return [];
+    return comments.filter((c) => c.parent_id === selectedComment.id);
+  }, [comments, selectedComment]);
+
+  const canComment = !readOnly && !!onAddComment;
   const gridSize = 20;
+
+  const cursorStyle = draggingScreenId
+    ? "grabbing"
+    : isPanning
+      ? "grabbing"
+      : commentMode
+        ? "crosshair"
+        : !readOnly && onScreenMove
+          ? "default"
+          : "default";
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-background">
       <div
         ref={containerRef}
         className="w-full h-full"
-        style={{ cursor: isPanning ? "grabbing" : "default" }}
+        style={{ cursor: cursorStyle }}
         onMouseDown={handleMouseDown}
       >
         {showGrid && (
@@ -282,16 +547,47 @@ export function BoardCanvas({
             willChange: "transform",
           }}
         >
-          {screens.map((screen) => (
-            <ScreenCard
-              key={screen.id}
-              screen={screen}
-              zoom={zoom}
-              isLiveEligible={liveIframeIds.has(screen.id)}
-              onClick={() => setSelectedScreen(screen)}
-            />
-          ))}
+          {screens.map((screen) => {
+            const isDragging = draggingScreenId === screen.id;
+            const displayScreen = isDragging
+              ? {
+                  ...screen,
+                  canvas_x: screen.canvas_x + dragDelta.dx,
+                  canvas_y: screen.canvas_y + dragDelta.dy,
+                }
+              : screen;
+
+            return (
+              <ScreenCard
+                key={screen.id}
+                screen={displayScreen}
+                zoom={zoom}
+                isLiveEligible={liveIframeIds.has(screen.id)}
+                onClick={
+                  !draggingScreenId && !commentMode
+                    ? () => setSelectedScreen(screen)
+                    : undefined
+                }
+              />
+            );
+          })}
+
+          <CommentPins
+            comments={comments}
+            screens={screens}
+            onPinClick={(c) => setSelectedComment(c)}
+            zoom={zoom}
+          />
         </div>
+
+        {/* Comment input popover (positioned in client space) */}
+        {commentInput && (
+          <CommentInputPopover
+            position={{ x: commentInput.clientX, y: commentInput.clientY }}
+            onSubmit={handleCommentSubmit}
+            onCancel={() => setCommentInput(null)}
+          />
+        )}
       </div>
 
       <CanvasToolbar
@@ -299,11 +595,13 @@ export function BoardCanvas({
         minZoom={MIN_ZOOM}
         maxZoom={MAX_ZOOM}
         showGrid={showGrid}
+        commentMode={commentMode}
         onZoomIn={handleZoomIn}
         onZoomOut={handleZoomOut}
         onFitToView={handleFitToView}
         onZoomTo={handleZoomTo}
         onToggleGrid={() => setShowGrid(!showGrid)}
+        onToggleCommentMode={canComment ? () => setCommentMode(!commentMode) : undefined}
       />
 
       <div className="absolute top-4 left-4 flex items-center gap-3">
@@ -315,12 +613,38 @@ export function BoardCanvas({
             {screens.length} screen{screens.length !== 1 ? "s" : ""}
           </span>
         )}
+        {commentMode && (
+          <span className="text-xs font-mono text-accent bg-accent-muted px-2 py-0.5 rounded">
+            COMMENT MODE
+          </span>
+        )}
       </div>
 
-      {selectedScreen && (
+      {selectedScreen && !commentMode && (
         <ScreenInspector
           screen={selectedScreen}
           onClose={() => setSelectedScreen(null)}
+        />
+      )}
+
+      {selectedComment && (
+        <CommentPanel
+          comment={selectedComment}
+          replies={replies}
+          onClose={() => setSelectedComment(null)}
+          onReply={
+            onReplyComment
+              ? (content) => onReplyComment(selectedComment.id, content)
+              : undefined
+          }
+          onResolve={
+            onResolveComment
+              ? (resolved) => onResolveComment(selectedComment.id, resolved)
+              : undefined
+          }
+          onEdit={onEditComment}
+          onDelete={onDeleteComment}
+          readOnly={readOnly}
         />
       )}
     </div>
