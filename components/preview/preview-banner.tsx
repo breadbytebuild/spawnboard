@@ -53,12 +53,15 @@ export function PreviewBanner({
       <div className="w-5 h-5 rounded bg-accent flex items-center justify-center shrink-0">
         <span className="text-[9px] font-bold text-white">S</span>
       </div>
-      <span className="text-xs text-text-secondary">
-        Want full access to <span className="text-text-primary font-medium">{agentName}</span>&apos;s boards?
+      <span className="text-xs text-text-secondary hidden sm:inline">
+        Want full access to <span className="text-text-primary font-medium truncate max-w-[120px] inline-block align-bottom">{agentName}</span>&apos;s boards?
+      </span>
+      <span className="text-xs text-text-secondary sm:hidden">
+        Get full access
       </span>
       <Link
         href={`/signup?from=preview&agent=${agentId}`}
-        className="text-xs bg-accent text-white px-3 py-1 rounded-md hover:bg-accent-hover font-medium transition-colors"
+        className="text-xs bg-accent text-white px-3 py-1 rounded-md hover:bg-accent-hover font-medium transition-colors shrink-0"
       >
         Sign up free
       </Link>

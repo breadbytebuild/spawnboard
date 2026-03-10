@@ -80,7 +80,7 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
         aria-hidden="true"
       />
 
-      <div className="relative z-10 w-[90vw] max-w-5xl max-h-[90vh] flex flex-col bg-surface border border-border rounded-2xl shadow-2xl overflow-hidden">
+      <div className="relative z-10 w-full sm:w-[90vw] max-w-5xl h-full sm:h-auto sm:max-h-[90vh] flex flex-col bg-surface border-0 sm:border border-border sm:rounded-2xl shadow-2xl overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-3 border-b border-border shrink-0">
           <div className="flex items-center gap-3 min-w-0">
@@ -181,7 +181,7 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
                 <iframe
                   src={screen.html_url}
                   title={screen.name}
-                  className="border border-border rounded-lg"
+                  className="border border-border rounded-lg max-w-full"
                   style={{ width: screen.width, height: Math.min(screen.height, 700) }}
                   sandbox=""
                 />

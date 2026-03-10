@@ -375,6 +375,82 @@ export function BoardCanvas({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
+  // Touch: pan (single finger) + pinch-to-zoom (two fingers)
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    let isPanningTouch = false;
+    let panStartX = 0;
+    let panStartY = 0;
+    let pinchStartDist = 0;
+    let pinchStartZoom = 1;
+
+    const onTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const touches = Array.from(e.touches);
+
+      if (touches.length === 1) {
+        isPanningTouch = true;
+        panStartX = touches[0].clientX - offsetRef.current.x;
+        panStartY = touches[0].clientY - offsetRef.current.y;
+      } else if (touches.length === 2) {
+        isPanningTouch = false;
+        pinchStartDist = Math.hypot(
+          touches[1].clientX - touches[0].clientX,
+          touches[1].clientY - touches[0].clientY
+        );
+        pinchStartZoom = zoomRef.current;
+      }
+    };
+
+    const onTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      const touches = Array.from(e.touches);
+
+      if (touches.length === 1 && isPanningTouch) {
+        setOffset({
+          x: touches[0].clientX - panStartX,
+          y: touches[0].clientY - panStartY,
+        });
+      } else if (touches.length === 2) {
+        const [t1, t2] = touches;
+        const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+        const midX = (t1.clientX + t2.clientX) / 2;
+        const midY = (t1.clientY + t2.clientY) / 2;
+        const rect = el.getBoundingClientRect();
+        const mx = midX - rect.left;
+        const my = midY - rect.top;
+
+        const newZoom = clampZoom(pinchStartZoom * (dist / pinchStartDist));
+        const zoomRatio = newZoom / zoomRef.current;
+
+        setOffset((prev) => ({
+          x: mx - (mx - prev.x) * zoomRatio,
+          y: my - (my - prev.y) * zoomRatio,
+        }));
+        setZoom(newZoom);
+      }
+    };
+
+    const onTouchEnd = (e: TouchEvent) => {
+      e.preventDefault();
+      if (e.touches.length === 0) {
+        isPanningTouch = false;
+      }
+    };
+
+    el.addEventListener("touchstart", onTouchStart, { passive: false });
+    el.addEventListener("touchmove", onTouchMove, { passive: false });
+    el.addEventListener("touchend", onTouchEnd, { passive: false });
+
+    return () => {
+      el.removeEventListener("touchstart", onTouchStart);
+      el.removeEventListener("touchmove", onTouchMove);
+      el.removeEventListener("touchend", onTouchEnd);
+    };
+  }, []);
+
   // Pan handling
   useEffect(() => {
     if (!isPanning) return;
@@ -641,7 +717,7 @@ export function BoardCanvas({
       <div
         ref={containerRef}
         className="w-full h-full"
-        style={{ cursor: cursorStyle }}
+        style={{ cursor: cursorStyle, touchAction: "none" }}
         onMouseDown={handleMouseDown}
       >
         {showGrid && (

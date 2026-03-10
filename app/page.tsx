@@ -27,16 +27,16 @@ export default function HomePage() {
               <span className="text-accent">BOARD</span>
             </span>
           </Link>
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 sm:gap-6">
             <Link
               href="/docs/quickstart"
-              className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+              className="text-xs sm:text-sm text-text-secondary hover:text-text-primary transition-colors"
             >
               Docs
             </Link>
             <Link
               href="/dashboard"
-              className="text-sm text-text-secondary hover:text-text-primary transition-colors"
+              className="hidden sm:inline text-sm text-text-secondary hover:text-text-primary transition-colors"
             >
               Dashboard
             </Link>

@@ -17,11 +17,14 @@ import {
   PanelLeftOpen,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/lib/hooks/use-media-query";
 import type { AgentTree } from "@/app/dashboard/layout";
 
 interface SidebarProps {
   agents: AgentTree[];
   human?: { id: string; name: string; email: string; avatar_url: string | null } | null;
+  mobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
 const STORAGE_KEY_COLLAPSED = "sb-sidebar-collapsed";
@@ -50,8 +53,9 @@ function agentColor(index: number): string {
   return AGENT_COLORS[index % AGENT_COLORS.length];
 }
 
-export function Sidebar({ agents, human }: SidebarProps) {
+export function Sidebar({ agents, human, mobileOpen, onMobileClose }: SidebarProps) {
   const pathname = usePathname();
+  const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [mounted, setMounted] = useState(false);
@@ -61,6 +65,11 @@ export function Sidebar({ agents, human }: SidebarProps) {
     setExpanded(getInitialExpanded());
     setMounted(true);
   }, []);
+
+  // Auto-close mobile drawer on navigation
+  useEffect(() => {
+    if (isMobile && mobileOpen) onMobileClose?.();
+  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -79,19 +88,15 @@ export function Sidebar({ agents, human }: SidebarProps) {
   const isExpanded = (key: string) => expanded[key] !== false; // default open
 
   if (!mounted) {
+    if (isMobile) return null;
     return <aside className="w-64 h-screen bg-surface border-r border-border" />;
   }
 
-  return (
-    <aside
-      className={cn(
-        "h-screen flex flex-col bg-surface border-r border-border transition-all duration-200 shrink-0",
-        collapsed ? "w-[52px]" : "w-64"
-      )}
-    >
+  const sidebarContent = (
+    <>
       {/* Header */}
       <div className="flex items-center justify-between p-3 border-b border-border">
-        {!collapsed ? (
+        {!collapsed || isMobile ? (
           <Link href="/dashboard" className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-lg bg-accent flex items-center justify-center shrink-0">
               <span className="text-white text-xs font-bold">S</span>
@@ -108,7 +113,7 @@ export function Sidebar({ agents, human }: SidebarProps) {
             </div>
           </Link>
         )}
-        {!collapsed && (
+        {!collapsed && !isMobile && (
           <button
             type="button"
             onClick={toggleCollapsed}
@@ -129,26 +134,26 @@ export function Sidebar({ agents, human }: SidebarProps) {
             icon={LayoutDashboard}
             label="Browse"
             active={pathname === "/dashboard"}
-            collapsed={collapsed}
+            collapsed={!isMobile && collapsed}
           />
           <NavLink
             href="/dashboard/team"
             icon={Users}
             label="Team"
             active={pathname === "/dashboard/team"}
-            collapsed={collapsed}
+            collapsed={!isMobile && collapsed}
           />
           <NavLink
             href="/dashboard/settings"
             icon={Settings}
             label="Settings"
             active={pathname === "/dashboard/settings"}
-            collapsed={collapsed}
+            collapsed={!isMobile && collapsed}
           />
         </div>
 
         {/* Agent tree */}
-        {agents.length > 0 && !collapsed && (
+        {agents.length > 0 && (isMobile || !collapsed) && (
           <div className="mb-4">
             <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest px-2 mb-2">
               Agents
@@ -261,8 +266,8 @@ export function Sidebar({ agents, human }: SidebarProps) {
           </div>
         )}
 
-        {/* Collapsed: agent avatars */}
-        {agents.length > 0 && collapsed && (
+        {/* Collapsed: agent avatars (desktop only) */}
+        {agents.length > 0 && collapsed && !isMobile && (
           <div className="flex flex-col items-center gap-2 mb-4">
             {agents.map((agent, idx) => (
               <button
@@ -280,7 +285,7 @@ export function Sidebar({ agents, human }: SidebarProps) {
         )}
 
         {/* Future features */}
-        {!collapsed && (
+        {(isMobile || !collapsed) && (
           <div>
             <p className="text-[10px] font-semibold text-text-tertiary uppercase tracking-widest px-2 mb-2">
               Coming Soon
@@ -301,7 +306,7 @@ export function Sidebar({ agents, human }: SidebarProps) {
 
       {/* Footer */}
       <div className="p-3 border-t border-border">
-        {!collapsed && human && (
+        {(isMobile || !collapsed) && human && (
           <div className="flex items-center gap-2 mb-2">
             <div className="w-6 h-6 rounded-full bg-accent-muted flex items-center justify-center shrink-0">
               <span className="text-[10px] font-bold text-accent">
@@ -318,24 +323,49 @@ export function Sidebar({ agents, human }: SidebarProps) {
             </div>
           </div>
         )}
-        <div className="flex items-center justify-between">
-          {!collapsed && (
-            <p className="text-[9px] text-text-tertiary font-mono">v0.1.0</p>
-          )}
-          <button
-            type="button"
-            onClick={toggleCollapsed}
-            className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer"
-            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? (
-              <PanelLeftOpen className="w-4 h-4" />
-            ) : (
-              <PanelLeftClose className="w-4 h-4" />
+        {!isMobile && (
+          <div className="flex items-center justify-between">
+            {!collapsed && (
+              <p className="text-[9px] text-text-tertiary font-mono">v0.1.0</p>
             )}
-          </button>
-        </div>
+            <button
+              type="button"
+              onClick={toggleCollapsed}
+              className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer"
+              aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+            >
+              {collapsed ? (
+                <PanelLeftOpen className="w-4 h-4" />
+              ) : (
+                <PanelLeftClose className="w-4 h-4" />
+              )}
+            </button>
+          </div>
+        )}
       </div>
+    </>
+  );
+
+  if (isMobile) {
+    if (!mobileOpen) return null;
+    return (
+      <>
+        <div className="fixed inset-0 bg-black/50 z-40" onClick={onMobileClose} />
+        <aside className="fixed inset-y-0 left-0 z-50 w-72 bg-surface border-r border-border flex flex-col">
+          {sidebarContent}
+        </aside>
+      </>
+    );
+  }
+
+  return (
+    <aside
+      className={cn(
+        "h-screen flex flex-col bg-surface border-r border-border transition-all duration-200 shrink-0",
+        collapsed ? "w-[52px]" : "w-64"
+      )}
+    >
+      {sidebarContent}
     </aside>
   );
 }

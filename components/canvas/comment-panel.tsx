@@ -209,7 +209,7 @@ export function CommentPanel({
   return (
     <div
       ref={panelRef}
-      className="absolute top-0 right-0 h-full w-80 bg-surface border-l border-border z-40 flex flex-col animate-in slide-in-from-right duration-200"
+      className="absolute bottom-0 right-0 h-[70vh] w-full sm:top-0 sm:bottom-auto sm:h-full sm:w-80 bg-surface border-t sm:border-t-0 sm:border-l border-border z-40 flex flex-col rounded-t-2xl sm:rounded-none"
     >
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border shrink-0">

@@ -1,6 +1,6 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentHuman } from "@/lib/auth/helpers";
-import { Sidebar } from "@/components/dashboard/sidebar";
+import { DashboardShell } from "@/components/dashboard/dashboard-shell";
 import { redirect } from "next/navigation";
 
 export interface AgentTree {
@@ -126,9 +126,8 @@ export default async function DashboardLayout({
   const agents = await fetchNavigationTree(human.id);
 
   return (
-    <div className="flex h-screen bg-background">
-      <Sidebar agents={agents} human={human} />
-      <main className="flex-1 overflow-auto">{children}</main>
-    </div>
+    <DashboardShell agents={agents} human={human}>
+      {children}
+    </DashboardShell>
   );
 }
