@@ -43,6 +43,7 @@ const updateBoardSchema = z.object({
   description: z.string().max(500).optional(),
   canvas_state: z.record(z.string(), z.unknown()).optional(),
   visibility: z.enum(["public", "private"]).optional(),
+  project_id: z.string().uuid().optional(),
 });
 
 export async function PATCH(
@@ -85,7 +86,23 @@ export async function PATCH(
 
   const updates = parsed.data;
   if (Object.keys(updates).length === 0) {
-    return apiError("BAD_REQUEST", "No fields to update. Provide at least one of: name, display_name, description, canvas_state, visibility", { fix: "Include at least one field in your JSON body" });
+    return apiError("BAD_REQUEST", "No fields to update. Provide at least one of: name, display_name, description, canvas_state, visibility, project_id", { fix: "Include at least one field in your JSON body" });
+  }
+
+  // If moving to a different project, verify the target belongs to this agent
+  if (updates.project_id) {
+    const { data: targetProject } = await supabase
+      .from("projects")
+      .select("id, workspaces!inner(agent_id)")
+      .eq("id", updates.project_id)
+      .eq("workspaces.agent_id", agent.id)
+      .single();
+
+    if (!targetProject) {
+      return apiError("NOT_FOUND", `Target project '${updates.project_id}' not found or doesn't belong to you.`, {
+        fix: "Call GET /workspaces/:id/projects to list your projects",
+      });
+    }
   }
 
   const { data: board, error } = await supabase
