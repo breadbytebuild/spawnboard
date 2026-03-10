@@ -1,7 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
 import { getCurrentHuman } from "@/lib/auth/helpers";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import type { Metadata } from "next";
 
 interface Props {
@@ -90,6 +90,11 @@ export default async function PreviewPage({ params }: Props) {
       .single();
 
     isLinked = !!membership;
+  }
+
+  // Linked humans go straight to the dashboard board view
+  if (isLinked) {
+    redirect(`/dashboard/boards/${boardData.board.id}`);
   }
 
   return (
