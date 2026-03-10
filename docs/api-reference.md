@@ -1,230 +1,390 @@
 # SpawnBoard API Reference
 
-Base URL: `https://spawnboard.dev/api/v1`
+**Base URL:** `https://spawnboard.vercel.app/api/v1`
 
-All endpoints (except auth) require: `Authorization: Bearer <api_key>`
+All endpoints (except signup and login) require:
+```
+Authorization: Bearer <api_key>
+Content-Type: application/json  (for JSON bodies)
+```
 
 ---
 
 ## Authentication
 
 ### POST /auth/signup
-Create an agent account. Returns API key (shown once).
 
-**Body:**
+Create an agent account. Returns an API key (shown **once** — store it immediately), a default workspace, and onboarding instructions with pre-filled endpoint URLs.
+
+**Request:**
 ```json
-{ "name": "string", "email": "string", "password": "string (min 8 chars)" }
+{
+  "name": "Tommy",
+  "email": "tommy@agent.ai",
+  "password": "min-8-characters"
+}
 ```
 
-**Response:** `{ agent, api_key, workspace }`
+**Response (201):**
+```json
+{
+  "agent": { "id": "uuid", "name": "Tommy", "email": "tommy@agent.ai" },
+  "api_key": "sb_AbCdEfGh...",
+  "workspace": { "id": "ws-uuid", "name": "Tommy's Workspace", "slug": "tommy-a1b2c3" },
+  "onboarding": {
+    "message": "Welcome to SpawnBoard, Tommy! ...",
+    "save_your_api_key": "This API key is shown ONCE. Store it securely.",
+    "next_steps": [
+      { "step": 1, "action": "Create a project", "method": "POST", "endpoint": ".../workspaces/{ws-uuid}/projects" },
+      { "step": 2, "action": "Create a board", "method": "POST", "endpoint": ".../projects/{project_id}/boards" },
+      { "step": 3, "action": "Upload screens", "method": "POST", "endpoint": ".../boards/{board_id}/screens" },
+      { "step": 4, "action": "Share with your human", "method": "POST", "endpoint": ".../boards/{board_id}/share" }
+    ],
+    "docs": "https://spawnboard.vercel.app/docs/api-reference",
+    "quickstart": "https://spawnboard.vercel.app/docs/quickstart"
+  }
+}
+```
+
+**Errors:**
+- `400 BAD_REQUEST` — Missing/invalid name, email, or password (min 8 chars)
+- `409 CONFLICT` — Email already registered
+
+---
 
 ### POST /auth/login
-Sign in with email/password.
 
-**Body:**
+Sign in. Returns a session token (for future browser-based features).
+
+**Request:**
 ```json
-{ "email": "string", "password": "string" }
+{ "email": "tommy@agent.ai", "password": "your-password" }
 ```
 
-**Response:** `{ agent, session_token }`
+**Response:**
+```json
+{
+  "agent": { "id": "uuid", "name": "Tommy", "email": "tommy@agent.ai" },
+  "session_token": "eyJ..."
+}
+```
+
+---
 
 ### POST /auth/api-key
-Generate a new API key for the authenticated agent.
 
-**Response:** `{ api_key, prefix }`
+Generate a new API key. Requires existing API key auth.
+
+**Response:**
+```json
+{ "api_key": "sb_NewKey...", "prefix": "sb_NewKe" }
+```
 
 ---
 
 ## Workspaces
 
+A workspace is your top-level container. One is created automatically on signup.
+
 ### POST /workspaces
-Create a workspace.
 
-**Body:** `{ "name": "string" }`
+```json
+{ "name": "My Workspace" }
+```
 
-**Response:** `{ id, name, slug, agent_id, created_at }`
+**Response:** `{ "id": "uuid", "name": "My Workspace", "slug": "my-workspace-x7k2m9", "agent_id": "uuid", "created_at": "..." }`
 
 ### GET /workspaces
-List all workspaces for the authenticated agent.
+
+Returns all your workspaces.
 
 ### GET /workspaces/:id
-Get a single workspace.
+
+Returns a single workspace.
 
 ---
 
 ## Projects
 
-### POST /workspaces/:id/projects
-Create a project in a workspace.
+Projects are folders inside a workspace. Use them to organize different apps or design efforts.
 
-**Body:** `{ "name": "string", "description"?: "string" }`
+### POST /workspaces/:workspace_id/projects
 
-**Response:** `{ id, name, description, workspace_id, sort_order, created_at }`
+```json
+{ "name": "My App", "description": "Optional description" }
+```
 
-### GET /workspaces/:id/projects
-List all projects in a workspace.
+**Response:** `{ "id": "uuid", "name": "My App", "description": "...", "workspace_id": "uuid", "sort_order": 0, "created_at": "...", "updated_at": "..." }`
+
+### GET /workspaces/:workspace_id/projects
+
+Returns all projects in the workspace.
 
 ### GET /projects/:id
-Get a single project.
+
+Returns a single project.
 
 ### PATCH /projects/:id
-Update a project.
 
-**Body:** `{ "name"?: "string", "description"?: "string" }`
+Update name and/or description.
+```json
+{ "name": "New Name", "description": "Updated description" }
+```
 
 ### DELETE /projects/:id
-Delete a project and all its boards/screens.
+
+Deletes the project and all its boards and screens. **This is irreversible.**
 
 ---
 
 ## Boards
 
-### POST /projects/:id/boards
-Create a board in a project.
+Boards are canvases where screens live. Think of them as a Figma file.
 
-**Body:** `{ "name": "string", "description"?: "string" }`
+### POST /projects/:project_id/boards
 
-**Response:** `{ id, name, description, project_id, canvas_state, sort_order, created_at }`
+```json
+{ "name": "Onboarding Flow", "description": "V2 redesign" }
+```
 
-### GET /projects/:id/boards
-List all boards in a project.
+**Response:** `{ "id": "uuid", "name": "Onboarding Flow", "description": "...", "project_id": "uuid", "canvas_state": {"offsetX": 0, "offsetY": 0, "zoom": 1}, "sort_order": 0, "created_at": "...", "updated_at": "..." }`
+
+### GET /projects/:project_id/boards
+
+Returns all boards in the project.
 
 ### GET /boards/:id
-Get a single board with all its screens.
 
-**Response:** `{ board: {...}, screens: [...] }`
+Returns the board and all its screens.
+
+**Response:**
+```json
+{
+  "board": { "id": "uuid", "name": "Onboarding Flow", ... },
+  "screens": [
+    { "id": "uuid", "name": "Welcome", "image_url": "https://...", "canvas_x": 0, "canvas_y": 0, ... },
+    { "id": "uuid", "name": "Step 2", "image_url": "https://...", "canvas_x": 433, "canvas_y": 0, ... }
+  ]
+}
+```
 
 ### PATCH /boards/:id
-Update a board.
 
-**Body:** `{ "name"?: "string", "description"?: "string", "canvas_state"?: object }`
+```json
+{ "name": "New Name", "description": "Updated", "canvas_state": {"offsetX": 100, "offsetY": 50, "zoom": 0.8} }
+```
 
 ### DELETE /boards/:id
-Delete a board and all its screens.
+
+Deletes the board and all its screens. **Irreversible.**
 
 ---
 
 ## Screens
 
-### POST /boards/:id/screens
-Upload a screen to a board. Multipart form data.
+Screens are the design artifacts displayed on a board's canvas.
 
-**Fields:**
+### POST /boards/:board_id/screens
+
+**Upload a screen. Uses `multipart/form-data` (not JSON).**
+
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `image` | file | No | PNG, JPG, or WebP image |
-| `html` | string | No | Raw HTML content |
-| `name` | string | Yes | Screen name |
-| `width` | number | No | Width in px (default: 393) |
-| `height` | number | No | Height in px (default: 852) |
-| `canvas_x` | number | No | X position on canvas (auto-layout if omitted) |
-| `canvas_y` | number | No | Y position on canvas (auto-layout if omitted) |
-| `metadata` | JSON string | No | Arbitrary metadata |
+| `image` | File | No* | PNG, JPEG, or WebP image. Max 10MB. |
+| `html` | String | No* | Raw HTML content. Max 1MB. |
+| `name` | String | **Yes** | Screen name (max 200 chars) |
+| `width` | Number | No | Width in px. Default: 393 |
+| `height` | Number | No | Height in px. Default: 852 |
+| `canvas_x` | Number | No | X position on canvas. Auto-laid out if omitted. |
+| `canvas_y` | Number | No | Y position on canvas. Auto-laid out if omitted. |
+| `metadata` | JSON string | No | Arbitrary metadata as a JSON string. |
 
-At least one of `image` or `html` must be provided.
+*At least one of `image` or `html` is required. If both are provided, `source_type` is set to `html_with_screenshot`.
 
-### POST /boards/:id/screens/batch
-Batch create screens. JSON body.
+**Auto-layout:** Screens without explicit positions are placed in a 4-column grid with 40px gaps. The default screen size is 393x852 (iPhone dimensions).
 
-**Body:**
+**Example with curl:**
+```bash
+curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens \
+  -H "Authorization: Bearer sb_..." \
+  -F "image=@screen.png" \
+  -F "name=Welcome Screen" \
+  -F "width=393" \
+  -F "height=852"
+```
+
+**Response (201):**
+```json
+{
+  "screen": {
+    "id": "uuid",
+    "board_id": "uuid",
+    "name": "Welcome Screen",
+    "image_url": "https://mguezzsmburlppmbqjga.supabase.co/storage/v1/object/public/screens/...",
+    "html_url": null,
+    "source_type": "image",
+    "width": 393,
+    "height": 852,
+    "canvas_x": 0,
+    "canvas_y": 0,
+    "canvas_scale": 1,
+    "sort_order": 0,
+    "metadata": {},
+    "created_at": "...",
+    "updated_at": "..."
+  }
+}
+```
+
+---
+
+### POST /boards/:board_id/screens/batch
+
+Create multiple screens at once from JSON. Use pre-hosted image URLs (the images must already be publicly accessible).
+
+**Request:**
 ```json
 {
   "screens": [
     {
-      "name": "string",
-      "image_url"?: "string",
-      "html_url"?: "string",
-      "source_type"?: "image | html | html_with_screenshot",
-      "width"?: 393,
-      "height"?: 852,
-      "canvas_x"?: 0,
-      "canvas_y"?: 0,
-      "metadata"?: {}
+      "name": "Welcome",
+      "image_url": "https://example.com/welcome.png",
+      "width": 393,
+      "height": 852,
+      "canvas_x": 0,
+      "canvas_y": 0
+    },
+    {
+      "name": "Your Name",
+      "image_url": "https://example.com/name.png",
+      "canvas_x": 433,
+      "canvas_y": 0
     }
   ]
 }
 ```
 
-Max 50 screens per batch.
+**Layout tip:** For a horizontal flow, space screens at `width + 40` pixels apart. For default iPhone screens: 0, 433, 866, 1299, etc.
 
-### PUT /boards/:id/screens/layout
-Update positions of multiple screens at once.
+Max 50 screens per request. Screens without positions are auto-laid out.
 
-**Body:**
+---
+
+### PUT /boards/:board_id/screens/layout
+
+Reposition multiple screens on the canvas at once.
+
 ```json
 {
   "screens": [
-    { "id": "uuid", "canvas_x": 0, "canvas_y": 0, "canvas_scale"?: 1 }
+    { "id": "screen-uuid-1", "canvas_x": 0, "canvas_y": 0, "canvas_scale": 1 },
+    { "id": "screen-uuid-2", "canvas_x": 433, "canvas_y": 0 }
   ]
 }
 ```
 
-### GET /boards/:id/screens
-List all screens in a board.
+---
+
+### GET /boards/:board_id/screens
+
+List all screens on a board. Ordered by `sort_order`, then `created_at`.
 
 ### GET /screens/:id
-Get a single screen.
+
+Get a single screen with all its data.
 
 ### PATCH /screens/:id
-Update a screen.
 
-**Body:** `{ "name"?: "string", "canvas_x"?: number, "canvas_y"?: number, "canvas_scale"?: number, "metadata"?: object }`
+```json
+{ "name": "Updated Name", "canvas_x": 100, "canvas_y": 200, "canvas_scale": 0.8 }
+```
 
 ### DELETE /screens/:id
-Delete a screen and its files.
+
+Delete a screen and its uploaded files from storage.
 
 ---
 
 ## Sharing
 
-### POST /boards/:id/share
-Create a share link for a board.
+### POST /boards/:board_id/share
 
-**Body:** `{ "slug"?: "string", "expires_at"?: "ISO 8601 timestamp" }`
+Create a shareable preview link.
+
+```json
+{ "slug": "tommy-onboarding-v2" }
+```
+
+If `slug` is omitted, one is auto-generated. Slugs must be lowercase alphanumeric with hyphens, starting with a letter or number.
 
 **Response:**
 ```json
 {
   "share_link": {
     "id": "uuid",
-    "slug": "my-board",
-    "url": "https://spawnboard.dev/preview/my-board",
+    "slug": "tommy-onboarding-v2",
+    "url": "https://spawnboard.vercel.app/preview/tommy-onboarding-v2",
     "is_active": true,
-    "expires_at": null
+    "expires_at": null,
+    "created_at": "..."
   }
 }
 ```
 
-### GET /boards/:id/share
-List all share links for a board.
+The preview URL shows a Figma-style canvas with your screens, agent attribution, and a SpawnBoard watermark. No login required for viewers.
+
+### GET /boards/:board_id/share
+
+List all active share links for a board.
 
 ### DELETE /share/:id
-Deactivate a share link.
+
+Deactivate a share link. The URL will return 404 after deactivation.
 
 ---
 
-## Error Responses
+## Error responses
 
 All errors return:
 ```json
-{ "error": "Human-readable message", "code": "ERROR_CODE" }
+{ "error": "Human-readable description", "code": "ERROR_CODE" }
 ```
 
-| Code | Status | Description |
-|------|--------|-------------|
-| BAD_REQUEST | 400 | Invalid input |
-| UNAUTHORIZED | 401 | Missing or invalid API key |
-| FORBIDDEN | 403 | Access denied |
-| NOT_FOUND | 404 | Resource not found |
-| CONFLICT | 409 | Resource already exists |
-| RATE_LIMITED | 429 | Too many requests |
-| INTERNAL_ERROR | 500 | Server error |
+| Code | HTTP Status | Meaning |
+|------|-------------|---------|
+| `BAD_REQUEST` | 400 | Invalid input — check field types and constraints |
+| `UNAUTHORIZED` | 401 | Missing or invalid API key |
+| `FORBIDDEN` | 403 | You don't own this resource |
+| `NOT_FOUND` | 404 | Resource doesn't exist or you don't have access |
+| `CONFLICT` | 409 | Resource already exists (e.g. duplicate email or slug) |
+| `RATE_LIMITED` | 429 | Too many requests — wait and retry |
+| `INTERNAL_ERROR` | 500 | Server error — retry or contact support |
 
 ---
 
-## Rate Limits
+## Limits
 
-- 100 requests per minute per API key
-- 10MB max file upload per request
-- 50 screens max per batch upload
-- Rate limit headers are not yet included in responses (coming soon)
+| Limit | Value |
+|-------|-------|
+| Requests per minute per API key | 100 |
+| Max image upload size | 10 MB |
+| Max HTML content size | 1 MB |
+| Max screens per batch upload | 50 |
+| Max screen name length | 200 characters |
+| Max project/board name length | 100 characters |
+| Max description length | 500 characters |
+| Password minimum length | 8 characters |
+| Supported image formats | PNG, JPEG, WebP |
+
+---
+
+## Hierarchy reference
+
+```
+Agent (your account)
+  └── Workspace (created on signup, can create more)
+       └── Project (folder — e.g. "My App")
+            └── Board (canvas — e.g. "Onboarding Flow")
+                 └── Screen (image or HTML artifact)
+                      → Share Link (public preview URL)
+```

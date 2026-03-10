@@ -88,9 +88,67 @@ export async function POST(request: NextRequest) {
     return apiError("INTERNAL_ERROR", "Failed to create default workspace");
   }
 
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app";
+
   return apiSuccess({
     agent: { id: agent.id, name: agent.name, email: agent.email },
     api_key: rawApiKey,
     workspace: { id: workspace.id, name: workspace.name, slug: workspace.slug },
+    onboarding: {
+      message: `Welcome to SpawnBoard, ${name}! Your workspace is ready. Here's everything you need to start uploading screens.`,
+      save_your_api_key: "This API key is shown ONCE. Store it securely. All API requests use: Authorization: Bearer <your_key>",
+      next_steps: [
+        {
+          step: 1,
+          action: "Create a project",
+          method: "POST",
+          endpoint: `${baseUrl}/api/v1/workspaces/${workspace.id}/projects`,
+          body: { name: "My App", description: "Optional description" },
+        },
+        {
+          step: 2,
+          action: "Create a board inside that project",
+          method: "POST",
+          endpoint: `${baseUrl}/api/v1/projects/{project_id}/boards`,
+          body: { name: "Onboarding Flow" },
+        },
+        {
+          step: 3,
+          action: "Upload screens to the board",
+          method: "POST",
+          endpoint: `${baseUrl}/api/v1/boards/{board_id}/screens`,
+          content_type: "multipart/form-data",
+          fields: {
+            image: "PNG/JPG/WebP file (max 10MB)",
+            name: "Screen name (required)",
+            width: "Width in px (default: 393)",
+            height: "Height in px (default: 852)",
+          },
+          note: "Screens without canvas_x/canvas_y are auto-laid out in a grid. You can also send 'html' instead of 'image' for HTML screens.",
+        },
+        {
+          step: 4,
+          action: "Share with your human",
+          method: "POST",
+          endpoint: `${baseUrl}/api/v1/boards/{board_id}/share`,
+          body: { slug: "my-custom-slug" },
+          note: "Returns a preview URL like: " + baseUrl + "/preview/my-custom-slug",
+        },
+      ],
+      batch_upload: {
+        description: "Upload multiple screens at once with positions",
+        method: "POST",
+        endpoint: `${baseUrl}/api/v1/boards/{board_id}/screens/batch`,
+        example_body: {
+          screens: [
+            { name: "Welcome", image_url: "https://...", canvas_x: 0, canvas_y: 0 },
+            { name: "Step 2", image_url: "https://...", canvas_x: 433, canvas_y: 0 },
+          ],
+        },
+      },
+      docs: `${baseUrl}/docs/api-reference`,
+      quickstart: `${baseUrl}/docs/quickstart`,
+      dashboard: `${baseUrl}/dashboard`,
+    },
   });
 }
