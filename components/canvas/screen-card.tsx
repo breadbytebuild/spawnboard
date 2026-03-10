@@ -32,44 +32,57 @@ export function ScreenCard({
   const hasCode = !!screen.source_html || !!screen.source_css;
   const hasContext = !!screen.context_md;
 
-  const canRenderLiveSrcDoc = isLiveEligible && !!screen.source_html;
-  const canRenderLiveUrl = isLiveEligible && !!screen.html_url;
+  const hasInlineHtml = !!screen.source_html;
+  const hasHostedHtml = !!screen.html_url;
+  const canRenderLive = isLiveEligible && (hasInlineHtml || hasHostedHtml);
   const hasImage = !!screen.image_url;
 
-  // Priority: inline srcDoc iframe > hosted html_url iframe > image > placeholder
-  const renderMode: "iframe-srcdoc" | "iframe-url" | "image" | "placeholder" =
-    canRenderLiveSrcDoc
-      ? "iframe-srcdoc"
-      : canRenderLiveUrl
-        ? "iframe-url"
-        : hasImage
-          ? "image"
-          : !!screen.html_url
-            ? "iframe-url" // even if not live-eligible, it's the only content
-            : "placeholder";
+  const renderMode: "iframe" | "image" | "placeholder" =
+    canRenderLive
+      ? "iframe"
+      : hasImage
+        ? "image"
+        : (hasInlineHtml || hasHostedHtml)
+          ? "iframe" // only content available — show it even without live eligibility
+          : "placeholder";
+
+  // Fetch hosted HTML and convert to srcDoc (avoids content-type: text/plain issue)
+  const [fetchedHtml, setFetchedHtml] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (renderMode !== "iframe" || hasInlineHtml || !screen.html_url) return;
+
+    let cancelled = false;
+    fetch(screen.html_url)
+      .then((res) => res.text())
+      .then((html) => {
+        if (!cancelled) setFetchedHtml(html);
+      })
+      .catch(() => {});
+
+    return () => { cancelled = true; };
+  }, [renderMode, hasInlineHtml, screen.html_url]);
 
   const iframeSrcDoc = useMemo(() => {
-    if (!screen.source_html) return "";
-    let html = screen.source_html;
+    const html = screen.source_html || fetchedHtml;
+    if (!html) return "";
 
     if (screen.source_css) {
       const styleTag = `<style>${screen.source_css}</style>`;
       if (html.includes("</head>")) {
-        html = html.replace("</head>", `${styleTag}</head>`);
+        return html.replace("</head>", `${styleTag}</head>`);
       } else if (html.includes("<html")) {
-        // No </head> — wrap with a proper head
-        html = html.replace(/(<html[^>]*>)/, `$1<head>${styleTag}</head>`);
+        return html.replace(/(<html[^>]*>)/, `$1<head>${styleTag}</head>`);
       } else {
-        // Fragment — wrap entirely
-        html = `<!DOCTYPE html><html><head>${styleTag}</head><body>${html}</body></html>`;
+        return `<!DOCTYPE html><html><head>${styleTag}</head><body>${html}</body></html>`;
       }
     }
 
     return html;
-  }, [screen.source_html, screen.source_css]);
+  }, [screen.source_html, screen.source_css, fetchedHtml]);
 
   const [iframeLoaded, setIframeLoaded] = useState(false);
-  const isIframe = renderMode === "iframe-srcdoc" || renderMode === "iframe-url";
+  const isIframe = renderMode === "iframe";
 
   useEffect(() => {
     if (!isIframe) setIframeLoaded(false);
@@ -96,7 +109,7 @@ export function ScreenCard({
           "relative"
         )}
       >
-        {renderMode === "iframe-srcdoc" && (
+        {renderMode === "iframe" && (
           <>
             {hasImage && (
               <Image
@@ -111,46 +124,23 @@ export function ScreenCard({
                 unoptimized
               />
             )}
-            <iframe
-              srcDoc={iframeSrcDoc}
-              title={screen.name}
-              className={cn(
-                "w-full h-full border-0 pointer-events-none transition-opacity duration-300",
-                iframeLoaded ? "opacity-100" : "opacity-0"
-              )}
-              sandbox=""
-              loading="lazy"
-              onLoad={() => setIframeLoaded(true)}
-            />
-          </>
-        )}
-
-        {renderMode === "iframe-url" && (
-          <>
-            {hasImage && (
-              <Image
-                src={screen.image_url!}
-                alt={screen.name}
-                width={screen.width}
-                height={screen.height}
+            {iframeSrcDoc ? (
+              <iframe
+                srcDoc={iframeSrcDoc}
+                title={screen.name}
                 className={cn(
-                  "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
-                  iframeLoaded ? "opacity-0" : "opacity-100"
+                  "w-full h-full border-0 pointer-events-none transition-opacity duration-300",
+                  iframeLoaded ? "opacity-100" : "opacity-0"
                 )}
-                unoptimized
+                sandbox="allow-same-origin"
+                loading="lazy"
+                onLoad={() => setIframeLoaded(true)}
               />
+            ) : (
+              <div className="w-full h-full flex items-center justify-center bg-surface-elevated">
+                <div className="w-5 h-5 border-2 border-text-tertiary/30 border-t-accent rounded-full animate-spin" />
+              </div>
             )}
-            <iframe
-              src={screen.html_url!}
-              title={screen.name}
-              className={cn(
-                "w-full h-full border-0 pointer-events-none transition-opacity duration-300",
-                iframeLoaded ? "opacity-100" : "opacity-0"
-              )}
-              sandbox=""
-              loading="lazy"
-              onLoad={() => setIframeLoaded(true)}
-            />
           </>
         )}
 
