@@ -27,7 +27,7 @@ interface ScreenInspectorProps {
 export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
   const dialogRef = useRef<HTMLDivElement>(null);
   const [activeTab, setActiveTab] = useState<Tab>("visual");
-  const [copied, setCopied] = useState(false);
+  const [copiedTab, setCopiedTab] = useState<string | null>(null);
 
   const hasHtml = !!screen.source_html;
   const hasCss = !!screen.source_css;
@@ -43,10 +43,14 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [onClose]);
 
-  const copyToClipboard = (text: string) => {
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  const copyToClipboard = (text: string, tabId: string) => {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        setCopiedTab(tabId);
+        setTimeout(() => setCopiedTab(null), 2000);
+      },
+      () => {} // Clipboard write failed — don't show false confirmation
+    );
   };
 
   const tabs: Array<{ id: Tab; label: string; icon: typeof Monitor; available: boolean }> = [
@@ -180,8 +184,8 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
             <CodePanel
               code={screen.source_html}
               language="HTML"
-              onCopy={() => copyToClipboard(screen.source_html!)}
-              copied={copied}
+              onCopy={() => copyToClipboard(screen.source_html!, "html")}
+              copied={copiedTab === "html"}
             />
           )}
 
@@ -189,8 +193,8 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
             <CodePanel
               code={screen.source_css}
               language="CSS"
-              onCopy={() => copyToClipboard(screen.source_css!)}
-              copied={copied}
+              onCopy={() => copyToClipboard(screen.source_css!, "css")}
+              copied={copiedTab === "css"}
             />
           )}
 
@@ -203,11 +207,11 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
                 </h3>
                 <button
                   type="button"
-                  onClick={() => copyToClipboard(screen.context_md!)}
+                  onClick={() => copyToClipboard(screen.context_md!, "context")}
                   className="flex items-center gap-1.5 text-xs text-text-tertiary hover:text-text-secondary transition-colors cursor-pointer"
                 >
-                  {copied ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
-                  {copied ? "Copied" : "Copy"}
+                  {copiedTab === "context" ? <Check className="w-3.5 h-3.5 text-success" /> : <Copy className="w-3.5 h-3.5" />}
+                  {copiedTab === "context" ? "Copied" : "Copy"}
                 </button>
               </div>
               <div className="bg-background rounded-xl border border-border p-6 font-mono text-sm text-text-secondary leading-relaxed whitespace-pre-wrap">

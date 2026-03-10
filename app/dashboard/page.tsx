@@ -48,7 +48,8 @@ export default function DashboardPage() {
                   <code className="text-accent">
                     curl -X POST /api/v1/boards/:id/screens \{"\n"}
                     {"  "}-H &apos;Authorization: Bearer sb_...&apos; \{"\n"}
-                    {"  "}-F &apos;image=@screen.png&apos; -F &apos;name=Welcome&apos;
+                    {"  "}-F &apos;image=@screen.png&apos; -F &apos;name=Welcome&apos; \{"\n"}
+                    {"  "}-F &apos;source_html=&lt;html&gt;...&lt;/html&gt;&apos;
                   </code>
                 </div>
               </div>

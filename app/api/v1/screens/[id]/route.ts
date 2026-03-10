@@ -75,9 +75,12 @@ export async function PATCH(
   if (parsed.data.canvas_y !== undefined) updateFields.canvas_y = parsed.data.canvas_y;
   if (parsed.data.canvas_scale !== undefined) updateFields.canvas_scale = parsed.data.canvas_scale;
   if (parsed.data.metadata !== undefined) updateFields.metadata = parsed.data.metadata;
+  if (parsed.data.source_html !== undefined) updateFields.source_html = parsed.data.source_html;
+  if (parsed.data.source_css !== undefined) updateFields.source_css = parsed.data.source_css;
+  if (parsed.data.context_md !== undefined) updateFields.context_md = parsed.data.context_md;
 
   if (Object.keys(updateFields).length === 0) {
-    return apiError("BAD_REQUEST", "No fields to update. Accepts: { name?: string, canvas_x?: number, canvas_y?: number, canvas_scale?: number, metadata?: object }", { fix: "Include at least one field in your JSON body" });
+    return apiError("BAD_REQUEST", "No fields to update. Accepts: { name?, canvas_x?, canvas_y?, canvas_scale?, metadata?, source_html?, source_css?, context_md? }", { fix: "Include at least one field in your JSON body" });
   }
 
   const { data: screen, error } = await supabase

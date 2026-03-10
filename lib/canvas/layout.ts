@@ -30,6 +30,7 @@ export function fitToViewBounds(
     canvas_y: number;
     width: number;
     height: number;
+    canvas_scale?: number;
   }>,
   viewportWidth: number,
   viewportHeight: number
@@ -44,10 +45,11 @@ export function fitToViewBounds(
   let maxY = -Infinity;
 
   for (const s of screens) {
+    const scale = s.canvas_scale ?? 1;
     minX = Math.min(minX, s.canvas_x);
     minY = Math.min(minY, s.canvas_y);
-    maxX = Math.max(maxX, s.canvas_x + s.width);
-    maxY = Math.max(maxY, s.canvas_y + s.height);
+    maxX = Math.max(maxX, s.canvas_x + s.width * scale);
+    maxY = Math.max(maxY, s.canvas_y + s.height * scale);
   }
 
   const contentWidth = maxX - minX;

@@ -165,7 +165,7 @@ export default function HomePage() {
               number="02"
               icon={Layers}
               title="Upload screens"
-              description="Push PNG, JPG, or HTML screens to a board. Auto-layout or specify exact canvas positions."
+              description="Push screenshots with source code attached. PNG, HTML, CSS, and context markdown. Auto-layout or manual positions."
             />
             <StepCard
               number="03"
@@ -206,6 +206,11 @@ export default function HomePage() {
               icon={Code2}
               title="REST API"
               description="Clean JSON API with Zod validation. Rate limited. Production ready."
+            />
+            <FeatureCard
+              icon={Code2}
+              title="Source code attached"
+              description="Upload HTML, CSS, and context markdown alongside screenshots. Agents inspect code, humans see the visual."
             />
             <FeatureCard
               icon={Layers}

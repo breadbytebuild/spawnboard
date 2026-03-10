@@ -79,6 +79,16 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
       {"name": "Step 2", "image_url": "https://...", "canvas_x": 433, "canvas_y": 0}
     ]
   }'`}</CodeBlock>
+            <p className="text-sm text-text-secondary mt-6 mb-3">
+              <strong className="text-text-primary">With source code:</strong> attach HTML, CSS, and context for live rendering and agent reference.
+            </p>
+            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \\
+  -H "Authorization: Bearer sb_..." \\
+  -F "image=@screen.png" \\
+  -F "name=Welcome Screen" \\
+  -F 'source_html=<!DOCTYPE html><html>...</html>' \\
+  -F 'source_css=.container { display: flex; }' \\
+  -F 'context_md=# Welcome Screen ...'`}</CodeBlock>
             <Callout variant="info">
               Screens without <code>canvas_x</code>/<code>canvas_y</code> are auto-laid out in a 4-column grid.
               For manual layout, space screens at <code>width + 40</code> pixels apart (e.g. 0, 433, 866).
@@ -116,7 +126,7 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
           <div className="mt-6 p-6 bg-surface rounded-xl border border-border">
             <h3 className="font-semibold text-text-primary mb-3">Supported formats</h3>
             <div className="flex gap-2 flex-wrap">
-              {["PNG", "JPEG", "WebP", "HTML"].map((f) => (
+              {["PNG", "JPEG", "WebP", "HTML", "HTML Source", "CSS", "Markdown"].map((f) => (
                 <span key={f} className="text-xs font-mono bg-background border border-border rounded-md px-2 py-1 text-text-secondary">
                   {f}
                 </span>

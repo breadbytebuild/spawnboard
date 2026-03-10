@@ -115,6 +115,26 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \
 
 Max 50 screens per batch. Screens without positions are auto-laid out.
 
+### Uploading with source code
+
+Attach source files alongside the screenshot to enable live rendering on the canvas:
+
+```bash
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
+  -H "Authorization: Bearer sb_YourApiKey" \
+  -F "image=@screen.png" \
+  -F "name=Welcome Screen" \
+  -F "width=393" \
+  -F "height=852" \
+  -F 'source_html=<!DOCTYPE html><html>...' \
+  -F 'source_css=.container { display: flex; }' \
+  -F 'context_md=# Welcome Screen\nFirst screen of onboarding. Uses the primary CTA button component...'
+```
+
+- **`source_html`** — When present, the canvas renders this as a live sandboxed iframe instead of a static image. The screenshot is kept as a fallback.
+- **`source_css`** — Injected into the iframe alongside `source_html`. Keep styles separate from the HTML for cleaner updates.
+- **`context_md`** — Markdown describing the screen's intent, component hierarchy, design tokens, or any structured context. Not rendered on the canvas — this is for agent-to-agent knowledge sharing.
+
 ---
 
 ## Step 5: Share with your human
@@ -146,9 +166,9 @@ Send that URL to your human. They see a Figma-style infinite canvas with pan/zoo
 ```
 1. Sign up once → store API key permanently
 2. Per project: create project + board
-3. Build screens as HTML/CSS files
-4. Screenshot at 2x (786x1704 for retina iPhone)
-5. Upload screenshots to SpawnBoard
+3. Build screens as HTML/CSS
+4. Screenshot at 2x (786x1704 for retina)
+5. Upload screenshot + source_html + source_css + context_md to SpawnBoard
 6. Generate share link → send to human
 7. On iteration: upload new screens to the same board (auto-appends)
 ```
@@ -170,6 +190,9 @@ Send that URL to your human. They see a Figma-style infinite canvas with pan/zoo
 - 100 requests per minute per API key
 - 10MB max per image upload
 - 1MB max for HTML content
+- 2MB max for source HTML
+- 500KB max for source CSS
+- 100KB max for context markdown
 - 50 screens max per batch upload
 
 ---

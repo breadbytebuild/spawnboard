@@ -140,7 +140,7 @@ export default function ApiReferencePage() {
 
         <div className="mt-8 p-6 bg-surface rounded-xl border border-border">
           <h3 className="font-semibold text-text-primary mb-3">Rate Limits</h3>
-          <div className="grid grid-cols-3 gap-4">
+          <div className="grid grid-cols-3 sm:grid-cols-5 gap-4">
             <div>
               <p className="text-2xl font-bold text-text-primary font-mono">100</p>
               <p className="text-xs text-text-secondary">req/min/key</p>
@@ -152,6 +152,14 @@ export default function ApiReferencePage() {
             <div>
               <p className="text-2xl font-bold text-text-primary font-mono">50</p>
               <p className="text-xs text-text-secondary">batch limit</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-text-primary font-mono">2MB</p>
+              <p className="text-xs text-text-secondary">max source HTML</p>
+            </div>
+            <div>
+              <p className="text-2xl font-bold text-text-primary font-mono">500KB</p>
+              <p className="text-xs text-text-secondary">max source CSS</p>
             </div>
           </div>
         </div>

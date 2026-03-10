@@ -198,6 +198,9 @@ Screens are the design artifacts displayed on a board's canvas.
 | `canvas_x` | Number | No | X position on canvas. Auto-laid out if omitted. |
 | `canvas_y` | Number | No | Y position on canvas. Auto-laid out if omitted. |
 | `metadata` | JSON string | No | Arbitrary metadata as a JSON string. |
+| `source_html` | String | No | HTML source code (max 2MB). Enables live iframe rendering on canvas. |
+| `source_css` | String | No | CSS styles (max 500KB). Injected into source_html for live rendering. |
+| `context_md` | String | No | Markdown context for agents (max 100KB). Intent, components, design tokens. |
 
 *At least one of `image` or `html` is required. If both are provided, `source_type` is set to `html_with_screenshot`.
 
@@ -230,6 +233,9 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
     "canvas_scale": 1,
     "sort_order": 0,
     "metadata": {},
+    "source_html": null,
+    "source_css": null,
+    "context_md": null,
     "created_at": "...",
     "updated_at": "..."
   }
@@ -258,7 +264,10 @@ Create multiple screens at once from JSON. Use pre-hosted image URLs (the images
       "name": "Your Name",
       "image_url": "https://example.com/name.png",
       "canvas_x": 433,
-      "canvas_y": 0
+      "canvas_y": 0,
+      "source_html": "<!DOCTYPE html><html>...</html>",
+      "source_css": ".container { display: flex; }",
+      "context_md": "# Your Name Screen\nCollects the user's display name..."
     }
   ]
 }
@@ -295,13 +304,40 @@ Get a single screen with all its data.
 
 ### PATCH /screens/:id
 
+Update a screen's properties, position, or source files.
+
 ```json
-{ "name": "Updated Name", "canvas_x": 100, "canvas_y": 200, "canvas_scale": 0.8 }
+{
+  "name": "Updated Name",
+  "canvas_x": 100,
+  "canvas_y": 200,
+  "canvas_scale": 0.8,
+  "source_html": "<!DOCTYPE html><html>...</html>",
+  "source_css": ".container { display: flex; }",
+  "context_md": "# Updated Screen\nRevised layout with new component hierarchy..."
+}
 ```
+
+All fields are optional. Pass `null` to clear a source file field.
 
 ### DELETE /screens/:id
 
 Delete a screen and its uploaded files from storage.
+
+---
+
+## Source Files & Live Rendering
+
+Screens can carry source code (HTML + CSS) alongside the visual screenshot. This enables two powerful features: live rendering on the canvas and structured context for agent-to-agent communication.
+
+**Live iframe rendering.** When `source_html` is present, the canvas renders the screen as a live sandboxed iframe instead of a static image. If `source_css` is also provided, it is injected into the iframe automatically. The screenshot (`image`) is still used as a fallback and for thumbnails.
+
+**Agent context.** The `context_md` field holds markdown that explains the screen to other agents — intent, component hierarchy, design tokens, dependencies, or any structured knowledge. This is not displayed on the canvas; it exists for programmatic consumption.
+
+**Performance and sandboxing:**
+- The canvas limits live iframes to 12 at once, prioritized by proximity to the viewport center
+- Below 25% zoom, all screens fall back to image rendering for performance
+- Each iframe is fully sandboxed (`sandbox=""`) — scripts are blocked and different apps' CSS cannot interfere with each other
 
 ---
 
@@ -369,6 +405,9 @@ All errors return:
 | Requests per minute per API key | 100 |
 | Max image upload size | 10 MB |
 | Max HTML content size | 1 MB |
+| Max source HTML size | 2 MB |
+| Max source CSS size | 500 KB |
+| Max context markdown size | 100 KB |
 | Max screens per batch upload | 50 |
 | Max screen name length | 200 characters |
 | Max project/board name length | 100 characters |

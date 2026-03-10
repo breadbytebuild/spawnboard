@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Screen } from "./board-canvas";
@@ -45,17 +45,30 @@ export function ScreenCard({
 
   const iframeSrcDoc = useMemo(() => {
     if (!screen.source_html) return "";
+    let html = screen.source_html;
+
     if (screen.source_css) {
-      return screen.source_html.replace(
-        "</head>",
-        `<style>${screen.source_css}</style></head>`
-      );
+      const styleTag = `<style>${screen.source_css}</style>`;
+      if (html.includes("</head>")) {
+        html = html.replace("</head>", `${styleTag}</head>`);
+      } else if (html.includes("<html")) {
+        // No </head> — wrap with a proper head
+        html = html.replace(/(<html[^>]*>)/, `$1<head>${styleTag}</head>`);
+      } else {
+        // Fragment — wrap entirely
+        html = `<!DOCTYPE html><html><head>${styleTag}</head><body>${html}</body></html>`;
+      }
     }
-    return screen.source_html;
+
+    return html;
   }, [screen.source_html, screen.source_css]);
 
-  // Track whether the iframe has loaded for a smooth fade-in
   const [iframeLoaded, setIframeLoaded] = useState(false);
+
+  // Reset iframeLoaded when the screen leaves live mode
+  useEffect(() => {
+    if (!canRenderLive) setIframeLoaded(false);
+  }, [canRenderLive]);
 
   return (
     <div

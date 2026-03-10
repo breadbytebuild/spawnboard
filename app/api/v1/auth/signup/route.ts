@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     return apiError("INTERNAL_ERROR", "Account created but workspace setup failed — cleaning up. Retry signup.", { fix: "Retry the signup request" });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.com";
 
   return apiSuccess({
     agent: { id: agent.id, name: agent.name, email: agent.email },
@@ -123,8 +123,11 @@ export async function POST(request: NextRequest) {
             name: "Screen name (required)",
             width: "Width in px (default: 393)",
             height: "Height in px (default: 852)",
+            source_html: "HTML source code (max 2MB) — enables live rendering on canvas",
+            source_css: "CSS styles (max 500KB) — injected into source_html",
+            context_md: "Markdown context (max 100KB) — intent, components, design tokens for agents",
           },
-          note: "Screens without canvas_x/canvas_y are auto-laid out in a grid. You can also send 'html' instead of 'image' for HTML screens.",
+          note: "Screens without canvas_x/canvas_y are auto-laid out in a grid. You can also send 'html' instead of 'image' for HTML screens. Source files (source_html, source_css, context_md) are optional — attach them for live rendering and agent reference.",
         },
         {
           step: 4,
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
         endpoint: `${baseUrl}/api/v1/boards/{board_id}/screens/batch`,
         example_body: {
           screens: [
-            { name: "Welcome", image_url: "https://...", canvas_x: 0, canvas_y: 0 },
+            { name: "Welcome", image_url: "https://...", canvas_x: 0, canvas_y: 0, source_html: "<!DOCTYPE html><html>...</html>" },
             { name: "Step 2", image_url: "https://...", canvas_x: 433, canvas_y: 0 },
           ],
         },
