@@ -1,7 +1,8 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
-import { Layers, Plus } from "lucide-react";
+import { Layers, Plus, Share2, Check } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 
@@ -24,6 +25,24 @@ export function ProjectGrid({
   projectName,
   boards,
 }: ProjectGridProps) {
+  const [shareUrl, setShareUrl] = useState<string | null>(null);
+  const [copied, setCopied] = useState(false);
+
+  const handleShareProject = async () => {
+    const res = await fetch("/api/v1/human/project-share", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ project_id: projectId }),
+    });
+    if (res.ok) {
+      const data = await res.json();
+      setShareUrl(data.url);
+      await navigator.clipboard.writeText(data.url).catch(() => {});
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    }
+  };
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -33,10 +52,21 @@ export function ProjectGrid({
             {boards.length} board{boards.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <Button variant="default" size="sm" className="gap-2" disabled>
-          <Plus className="w-4 h-4" />
-          New Board
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="secondary"
+            size="sm"
+            className="gap-2"
+            onClick={handleShareProject}
+          >
+            {copied ? <Check className="w-4 h-4 text-success" /> : <Share2 className="w-4 h-4" />}
+            {copied ? "Copied!" : "Share Folder"}
+          </Button>
+          <Button variant="default" size="sm" className="gap-2" disabled>
+            <Plus className="w-4 h-4" />
+            New Board
+          </Button>
+        </div>
       </div>
 
       {boards.length === 0 ? (
