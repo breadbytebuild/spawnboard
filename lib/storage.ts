@@ -8,9 +8,18 @@ const EXT_MAP: Record<string, string> = {
   "image/svg+xml": "svg",
   "image/gif": "gif",
   "image/avif": "avif",
+  "application/octet-stream": "riv",
+  "application/x-rive": "riv",
 };
 
 export const ALLOWED_IMAGE_TYPES = Object.keys(EXT_MAP);
+
+export function isRiveFile(filename: string, contentType: string): boolean {
+  return (
+    filename.endsWith(".riv") ||
+    contentType === "application/x-rive"
+  );
+}
 
 export function getExtFromContentType(contentType: string): string {
   return EXT_MAP[contentType] || "png";
@@ -116,7 +125,7 @@ export async function deleteScreenFiles(
   screenId: string
 ): Promise<void> {
   const supabase = createAdminClient();
-  const exts = ["png", "jpg", "webp", "svg", "gif", "avif", "html"];
+  const exts = ["png", "jpg", "webp", "svg", "gif", "avif", "html", "riv"];
   const paths = exts.map(
     (ext) => `${agentId}/${boardId}/${screenId}.${ext}`
   );

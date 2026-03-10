@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
+import { RivePlayer } from "./rive-player";
 import type { Screen } from "./board-canvas";
 
 interface ScreenCardProps {
@@ -36,15 +37,18 @@ export function ScreenCard({
   const hasHostedHtml = !!screen.html_url;
   const canRenderLive = isLiveEligible && (hasInlineHtml || hasHostedHtml);
   const hasImage = !!screen.image_url;
+  const isRive = screen.file_type === "riv" && hasImage;
 
-  const renderMode: "iframe" | "image" | "placeholder" =
-    canRenderLive
-      ? "iframe"
-      : hasImage
-        ? "image"
-        : (hasInlineHtml || hasHostedHtml)
-          ? "iframe" // only content available — show it even without live eligibility
-          : "placeholder";
+  const renderMode: "rive" | "iframe" | "image" | "placeholder" =
+    isRive
+      ? "rive"
+      : canRenderLive
+        ? "iframe"
+        : hasImage
+          ? "image"
+          : (hasInlineHtml || hasHostedHtml)
+            ? "iframe"
+            : "placeholder";
 
   // Fetch hosted HTML and convert to srcDoc (avoids content-type: text/plain issue)
   const [fetchedHtml, setFetchedHtml] = useState<string | null>(null);
@@ -142,6 +146,15 @@ export function ScreenCard({
               </div>
             )}
           </>
+        )}
+
+        {renderMode === "rive" && (
+          <RivePlayer
+            src={screen.image_url!}
+            width={screen.width}
+            height={screen.height}
+            className="w-full h-full"
+          />
         )}
 
         {renderMode === "image" && (

@@ -13,6 +13,7 @@ import {
   Check,
 } from "lucide-react";
 import Image from "next/image";
+import { RivePlayer } from "./rive-player";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import type { Screen } from "./board-canvas";
@@ -188,7 +189,15 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
         <div className="flex-1 overflow-auto p-5">
           {activeTab === "visual" && (
             <div className="flex items-center justify-center">
-              {screen.image_url ? (
+              {screen.file_type === "riv" && screen.image_url ? (
+                <div className="rounded-lg border border-border overflow-hidden">
+                  <RivePlayer
+                    src={screen.image_url}
+                    width={Math.min(screen.width, 600)}
+                    height={Math.min(screen.height, 600)}
+                  />
+                </div>
+              ) : screen.image_url ? (
                 <Image
                   src={screen.image_url}
                   alt={screen.name}

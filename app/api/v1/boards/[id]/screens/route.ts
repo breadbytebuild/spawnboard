@@ -123,8 +123,9 @@ export async function POST(
     if (imageFile.size > MAX_IMAGE_SIZE) {
       return apiError("BAD_REQUEST", "Image file too large (max 10MB). Resize or compress the image and retry.", { fix: "Reduce image file size to under 10MB" });
     }
-    if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
-      return apiError("BAD_REQUEST", `Unsupported image format. Accepted: ${ALLOWED_IMAGE_TYPES.join(", ")}. Got: ${imageFile.type}`, { fix: "Use PNG, JPEG, WebP, SVG, GIF, or AVIF format" });
+    const isAllowedType = ALLOWED_IMAGE_TYPES.includes(imageFile.type) || imageFile.name?.endsWith(".riv");
+    if (!isAllowedType) {
+      return apiError("BAD_REQUEST", `Unsupported file format. Accepted: PNG, JPEG, WebP, SVG, GIF, AVIF, Rive (.riv). Got: ${imageFile.type}`, { fix: "Use a supported image or animation format" });
     }
   }
 
@@ -159,11 +160,12 @@ export async function POST(
         height = dims.height;
       }
 
-      const uploadResult = await uploadScreenImage(agent.id, boardId, screenId, buffer, imageFile.type);
+      const contentType = imageFile.name?.endsWith(".riv") ? "application/octet-stream" : imageFile.type;
+      const uploadResult = await uploadScreenImage(agent.id, boardId, screenId, buffer, contentType);
       imageUrl = uploadResult.url;
       thumbnailUrl = uploadResult.thumbnailUrl;
       fileSize = uploadResult.fileSize;
-      fileType = getExtFromContentType(imageFile.type);
+      fileType = imageFile.name?.endsWith(".riv") ? "riv" : getExtFromContentType(imageFile.type);
       originalName = imageFile.name || null;
     }
 
