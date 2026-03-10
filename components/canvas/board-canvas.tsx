@@ -39,8 +39,20 @@ interface ViewportRect {
 }
 
 const VIEWPORT_BUFFER = 1.5;
+const MAX_LIVE_IFRAMES = 12;
+const IFRAME_MIN_ZOOM = 0.25; // Below this zoom, no iframes at all
 
-function isScreenNearViewport(
+function distanceToViewportCenter(
+  screen: Screen,
+  centerX: number,
+  centerY: number
+): number {
+  const sx = screen.canvas_x + (screen.width * screen.canvas_scale) / 2;
+  const sy = screen.canvas_y + (screen.height * screen.canvas_scale) / 2;
+  return Math.hypot(sx - centerX, sy - centerY);
+}
+
+function isScreenInViewport(
   screen: Screen,
   viewport: ViewportRect
 ): boolean {
@@ -217,6 +229,29 @@ export function BoardCanvas({
     [zoom, offset]
   );
 
+  // Compute which screens are eligible for live iframe rendering.
+  // Hard cap of MAX_LIVE_IFRAMES, prioritized by distance to viewport center.
+  // Below IFRAME_MIN_ZOOM, no iframes render at all (everything is image/placeholder).
+  const liveIframeIds = useMemo(() => {
+    if (zoom < IFRAME_MIN_ZOOM) return new Set<string>();
+
+    const vpCenterX = (viewportRect.left + viewportRect.right) / 2;
+    const vpCenterY = (viewportRect.top + viewportRect.bottom) / 2;
+
+    const candidates = screens
+      .filter(
+        (s) => !!s.source_html && isScreenInViewport(s, viewportRect)
+      )
+      .map((s) => ({
+        id: s.id,
+        dist: distanceToViewportCenter(s, vpCenterX, vpCenterY),
+      }))
+      .sort((a, b) => a.dist - b.dist)
+      .slice(0, MAX_LIVE_IFRAMES);
+
+    return new Set(candidates.map((c) => c.id));
+  }, [screens, viewportRect, zoom]);
+
   const gridSize = 20;
 
   return (
@@ -252,7 +287,7 @@ export function BoardCanvas({
               key={screen.id}
               screen={screen}
               zoom={zoom}
-              isNearViewport={isScreenNearViewport(screen, viewportRect)}
+              isLiveEligible={liveIframeIds.has(screen.id)}
               onClick={() => setSelectedScreen(screen)}
             />
           ))}

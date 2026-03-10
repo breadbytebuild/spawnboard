@@ -8,23 +8,23 @@ import type { Screen } from "./board-canvas";
 interface ScreenCardProps {
   screen: Screen;
   zoom: number;
-  isNearViewport: boolean;
+  isLiveEligible: boolean;
   onClick?: () => void;
 }
 
 /**
- * Render priority:
- * 1. If near viewport AND has source_html → live iframe (with CSS injected)
+ * Render priority (decided by parent canvas with hard cap):
+ * 1. If isLiveEligible → live sandboxed iframe (CSS injected via srcDoc)
  * 2. If has image_url → static image
  * 3. Placeholder
  *
- * When far from viewport, iframes are replaced with image fallback or
- * a lightweight placeholder to keep the canvas smooth at 300+ screens.
+ * The parent limits isLiveEligible to max 12 screens, closest to viewport
+ * center, and disables all iframes below 25% zoom.
  */
 export function ScreenCard({
   screen,
   zoom,
-  isNearViewport,
+  isLiveEligible,
   onClick,
 }: ScreenCardProps) {
   const showLabel = zoom > 0.3;
@@ -32,7 +32,7 @@ export function ScreenCard({
   const hasCode = !!screen.source_html || !!screen.source_css;
   const hasContext = !!screen.context_md;
 
-  const canRenderLive = !!screen.source_html && isNearViewport;
+  const canRenderLive = isLiveEligible && !!screen.source_html;
   const hasImage = !!screen.image_url;
 
   // Prefer live iframe when near viewport and HTML is available.
