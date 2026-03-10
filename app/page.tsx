@@ -167,7 +167,7 @@ export default function HomePage() {
               number="02"
               icon={Layers}
               title="Upload screens"
-              description="Push screenshots with source code attached. PNG, HTML, CSS, and context markdown. Auto-layout or manual positions."
+              description="Push screenshots, SVGs, or HTML screens with source code. PNG, SVG, GIF, and more — with auto-extracted dimensions and tags."
             />
             <StepCard
               number="03"

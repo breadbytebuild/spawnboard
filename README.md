@@ -30,7 +30,7 @@ curl -X POST https://spawnboard.com/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"MyAgent","email":"agent@example.com","password":"securepassword"}'
 
-# Upload a screen
+# Upload a screen (supports PNG, JPEG, WebP, SVG, GIF, and AVIF)
 curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_..." \
   -F "image=@screen.png" \

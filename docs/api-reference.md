@@ -235,7 +235,7 @@ Screens are the design artifacts displayed on a board's canvas.
 
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
-| `image` | File | No* | PNG, JPEG, or WebP image. Max 10MB. |
+| `image` | File | No* | Image file (PNG, JPEG, WebP, SVG, GIF, AVIF). Max 10MB. Dimensions auto-extracted. |
 | `html` | String | No* | Raw HTML content. Max 1MB. |
 | `name` | String | **Yes** | Screen name (max 200 chars) |
 | `width` | Number | No | Width in px. Default: 393 |
@@ -649,6 +649,46 @@ All errors return:
 | Max description length | 500 characters |
 | Password minimum length | 8 characters |
 | Supported image formats | PNG, JPEG, WebP, SVG, GIF, AVIF |
+
+---
+
+## Asset Best Practices
+
+### Asset types and recommended approach
+
+| Asset Type | Format | Upload Approach | Tips |
+|---|---|---|---|
+| App screens | PNG or WebP | `image` + `source_html` + `source_css` + `context_md` | Best experience: screenshot + full source. Use 393x852 (iPhone) or 786x1704 (retina 2x). |
+| Icons | SVG | `image` (SVG file) + `tags=icon,branding` | SVG stays crisp at any zoom. Auto-dimensions from viewBox. |
+| Illustrations | SVG or PNG | `image` + `context_md` with usage notes | For PNG: use highest resolution available. For SVG: include viewBox. |
+| Competitor screenshots | PNG or JPEG | `image` only + `tags=competitor,{app_name}` | No source code needed. Tag for easy filtering. |
+| Design tokens/components | HTML | `source_html` + `source_css` + `context_md` | Document colors, spacing, fonts in context_md. |
+| Wireframes | SVG or PNG | `image` + `description` | Keep descriptions short but specific. |
+
+### Choosing between upload fields
+
+| Field | When to use | What happens |
+|---|---|---|
+| `image` | Always for visual assets (PNG, JPG, SVG, GIF, etc.) | Stored in Supabase Storage. Renders on canvas. Thumbnail generated. |
+| `source_html` | When you have the HTML code that generates a screen | Stored inline in DB. Enables live iframe rendering on canvas. Shown in "HTML" tab. |
+| `source_css` | When you have extracted CSS styles | Injected into source_html for live rendering. Shown in "CSS" tab. |
+| `html` (form field) | Legacy: uploads HTML as a hosted file | Stored in Supabase Storage as .html file. Renders via iframe. Use `source_html` instead for new uploads. |
+| `context_md` | When you want to explain the asset to other agents | Markdown describing intent, components, tokens, usage. Shown in "Context" tab. |
+
+### Tags
+
+Tags are stored as a text array. Use lowercase, hyphenated words. Examples:
+- `icon`, `illustration`, `screen`, `component`, `competitor`
+- `v1`, `v2`, `draft`, `final`, `approved`
+- `onboarding`, `settings`, `home`, `checkout`
+
+Tags are case-sensitive. No maximum count. Comma-separated in single upload, JSON array in batch/PATCH.
+
+### Version history
+
+When you update a screen's content via `PATCH /screens/:id` (changing `source_html`, `source_css`, or `context_md`), the previous version is automatically saved. View history via `GET /screens/:id/history`.
+
+Versions track: image_url, html_url, source_html, source_css, context_md, file_type, file_size, tags, description, who made the change and when.
 
 ---
 

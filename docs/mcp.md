@@ -22,6 +22,9 @@ SpawnBoard will offer an MCP (Model Context Protocol) server that wraps the REST
 | `add_comment` | Create a comment pinned to a screen or canvas |
 | `reply_to_comment` | Reply to an existing comment |
 | `resolve_comment` | Mark a comment as resolved |
+| `download_screen` | Get download URL for a screen asset |
+| `get_screen_history` | View version history of a screen |
+| `update_screen_tags` | Add or update tags on a screen |
 
 ## Configuration
 
