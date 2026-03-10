@@ -74,13 +74,18 @@ export async function POST(
     return apiError("BAD_REQUEST", "Invalid form data");
   }
 
+  const getString = (key: string) => {
+    const val = formData.get(key);
+    return typeof val === "string" ? val : undefined;
+  };
+
   const fields = {
-    name: formData.get("name") as string | null,
-    width: formData.get("width") as string | null,
-    height: formData.get("height") as string | null,
-    canvas_x: formData.get("canvas_x") as string | null,
-    canvas_y: formData.get("canvas_y") as string | null,
-    metadata: formData.get("metadata") as string | null,
+    name: getString("name"),
+    width: getString("width"),
+    height: getString("height"),
+    canvas_x: getString("canvas_x"),
+    canvas_y: getString("canvas_y"),
+    metadata: getString("metadata"),
   };
 
   const parsed = createScreenSchema.safeParse(fields);
