@@ -37,12 +37,6 @@ export async function PATCH(
     });
   }
 
-  if (existing.human_id !== human.id) {
-    return apiError("FORBIDDEN", "You can only update your own comments.", {
-      fix: "Use the comment ID for a comment you authored",
-    });
-  }
-
   let body: unknown;
   try {
     body = await request.json();
@@ -55,6 +49,20 @@ export async function PATCH(
   const parsed = updateCommentSchema.safeParse(body);
   if (!parsed.success) {
     return zodApiError(parsed.error, "comment update");
+  }
+
+  // Resolve/unresolve is allowed by any human with board access.
+  // Editing content/position is author-only.
+  const isResolveOnly =
+    parsed.data.is_resolved !== undefined &&
+    !parsed.data.content &&
+    parsed.data.pin_x === undefined &&
+    parsed.data.pin_y === undefined;
+
+  if (!isResolveOnly && existing.human_id !== human.id) {
+    return apiError("FORBIDDEN", "You can only edit your own comments. Resolving is open to all team members.", {
+      fix: "To resolve, send only { is_resolved: true/false }",
+    });
   }
 
   const updates: Record<string, unknown> = { ...parsed.data };
