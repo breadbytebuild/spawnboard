@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentHuman } from "@/lib/auth/helpers";
 import { PreviewCanvas } from "@/components/preview/preview-canvas";
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
@@ -72,15 +73,34 @@ export default async function PreviewPage({ params }: Props) {
       source_css: string | null;
       context_md: string | null;
     }>;
-    agent: { name: string; avatar_url: string | null };
+    agent: { id: string; name: string; avatar_url: string | null };
     share: { slug: string; created_at: string };
   };
+
+  // Check if current viewer is logged in and linked to this agent
+  const human = await getCurrentHuman();
+  let isLinked = false;
+
+  if (human) {
+    const { data: membership } = await supabase
+      .from("agent_members")
+      .select("id")
+      .eq("agent_id", boardData.agent.id)
+      .eq("human_id", human.id)
+      .single();
+
+    isLinked = !!membership;
+  }
 
   return (
     <PreviewCanvas
       board={boardData.board}
       screens={boardData.screens}
       agent={boardData.agent}
+      authState={{
+        isLoggedIn: !!human,
+        isLinked,
+      }}
     />
   );
 }

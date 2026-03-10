@@ -1,6 +1,7 @@
 "use client";
 
 import { BoardCanvas, type Screen } from "@/components/canvas/board-canvas";
+import { PreviewBanner } from "./preview-banner";
 import { FeedbackSlot } from "./feedback-slot";
 import Link from "next/link";
 
@@ -12,8 +13,13 @@ interface PreviewCanvasProps {
   };
   screens: Screen[];
   agent: {
+    id: string;
     name: string;
     avatar_url: string | null;
+  };
+  authState?: {
+    isLoggedIn: boolean;
+    isLinked: boolean;
   };
 }
 
@@ -21,9 +27,18 @@ export function PreviewCanvas({
   board,
   screens,
   agent,
+  authState,
 }: PreviewCanvasProps) {
   return (
     <div className="h-screen w-screen relative bg-background">
+      {/* Auth-aware banner */}
+      <PreviewBanner
+        agentId={agent.id}
+        agentName={agent.name}
+        isLoggedIn={authState?.isLoggedIn ?? false}
+        isLinked={authState?.isLinked ?? false}
+      />
+
       <BoardCanvas
         screens={screens}
         boardName={board.name}
@@ -31,7 +46,7 @@ export function PreviewCanvas({
       />
 
       {/* Agent attribution */}
-      <div className="absolute top-4 right-4 flex items-center gap-2 bg-surface/90 backdrop-blur-xl border border-border rounded-lg px-3 py-2">
+      <div className="absolute top-12 right-4 flex items-center gap-2 bg-surface/90 backdrop-blur-xl border border-border rounded-lg px-3 py-2">
         <div className="w-6 h-6 rounded-full bg-accent-muted flex items-center justify-center">
           {agent.avatar_url ? (
             <img
@@ -61,7 +76,6 @@ export function PreviewCanvas({
         <span className="text-[10px] font-mono">SpawnBoard</span>
       </Link>
 
-      {/* Future: feedback slot */}
       <FeedbackSlot boardId={board.id} />
     </div>
   );

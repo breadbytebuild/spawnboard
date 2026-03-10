@@ -1,5 +1,7 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { getCurrentHuman } from "@/lib/auth/helpers";
 import { Sidebar } from "@/components/dashboard/sidebar";
+import { redirect } from "next/navigation";
 
 export interface AgentTree {
   id: string;
@@ -17,10 +19,25 @@ export interface AgentTree {
   }>;
 }
 
-async function fetchNavigationTree(): Promise<AgentTree[]> {
+async function fetchNavigationTree(humanId: string | null): Promise<AgentTree[]> {
   const supabase = createAdminClient();
 
-  const { data: agents } = await supabase
+  let agentIds: string[] | null = null;
+
+  if (humanId) {
+    const { data: memberships } = await supabase
+      .from("agent_members")
+      .select("agent_id")
+      .eq("human_id", humanId);
+
+    if (memberships && memberships.length > 0) {
+      agentIds = memberships.map((m) => m.agent_id);
+    } else {
+      return [];
+    }
+  }
+
+  let query = supabase
     .from("agents")
     .select(
       `id, name, avatar_url,
@@ -34,9 +51,14 @@ async function fetchNavigationTree(): Promise<AgentTree[]> {
     )
     .order("created_at", { ascending: false });
 
+  if (agentIds) {
+    query = query.in("id", agentIds);
+  }
+
+  const { data: agents } = await query;
+
   if (!agents) return [];
 
-  // Fetch screen counts per board in one query
   const { data: counts } = await supabase.rpc("get_board_screen_counts");
   const countMap = new Map<string, number>();
   if (counts) {
@@ -94,11 +116,17 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const agents = await fetchNavigationTree();
+  const human = await getCurrentHuman();
+
+  if (!human) {
+    redirect("/login?redirect=/dashboard");
+  }
+
+  const agents = await fetchNavigationTree(human.id);
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar agents={agents} />
+      <Sidebar agents={agents} human={human} />
       <main className="flex-1 overflow-auto">{children}</main>
     </div>
   );

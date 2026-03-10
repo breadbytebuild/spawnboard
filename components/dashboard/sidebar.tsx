@@ -6,6 +6,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Settings,
+  Users,
   BookOpen,
   Sparkles,
   ChevronRight,
@@ -20,6 +21,7 @@ import type { AgentTree } from "@/app/dashboard/layout";
 
 interface SidebarProps {
   agents: AgentTree[];
+  human?: { id: string; name: string; email: string; avatar_url: string | null } | null;
 }
 
 const STORAGE_KEY_COLLAPSED = "sb-sidebar-collapsed";
@@ -48,7 +50,7 @@ function agentColor(index: number): string {
   return AGENT_COLORS[index % AGENT_COLORS.length];
 }
 
-export function Sidebar({ agents }: SidebarProps) {
+export function Sidebar({ agents, human }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -127,6 +129,13 @@ export function Sidebar({ agents }: SidebarProps) {
             icon={LayoutDashboard}
             label="Browse"
             active={pathname === "/dashboard"}
+            collapsed={collapsed}
+          />
+          <NavLink
+            href="/dashboard/team"
+            icon={Users}
+            label="Team"
+            active={pathname === "/dashboard/team"}
             collapsed={collapsed}
           />
           <NavLink
@@ -291,22 +300,41 @@ export function Sidebar({ agents }: SidebarProps) {
       </nav>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border flex items-center justify-between">
-        {!collapsed && (
-          <p className="text-[9px] text-text-tertiary font-mono">v0.1.0</p>
+      <div className="p-3 border-t border-border">
+        {!collapsed && human && (
+          <div className="flex items-center gap-2 mb-2">
+            <div className="w-6 h-6 rounded-full bg-accent-muted flex items-center justify-center shrink-0">
+              <span className="text-[10px] font-bold text-accent">
+                {human.name.charAt(0).toUpperCase()}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[11px] text-text-primary font-medium truncate">
+                {human.name}
+              </p>
+              <p className="text-[9px] text-text-tertiary truncate">
+                {human.email}
+              </p>
+            </div>
+          </div>
         )}
-        <button
-          type="button"
-          onClick={toggleCollapsed}
-          className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer"
-          aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-        >
-          {collapsed ? (
-            <PanelLeftOpen className="w-4 h-4" />
-          ) : (
-            <PanelLeftClose className="w-4 h-4" />
+        <div className="flex items-center justify-between">
+          {!collapsed && (
+            <p className="text-[9px] text-text-tertiary font-mono">v0.1.0</p>
           )}
-        </button>
+          <button
+            type="button"
+            onClick={toggleCollapsed}
+            className="p-1 rounded-md text-text-tertiary hover:text-text-secondary hover:bg-surface-elevated transition-colors cursor-pointer"
+            aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {collapsed ? (
+              <PanelLeftOpen className="w-4 h-4" />
+            ) : (
+              <PanelLeftClose className="w-4 h-4" />
+            )}
+          </button>
+        </div>
       </div>
     </aside>
   );
