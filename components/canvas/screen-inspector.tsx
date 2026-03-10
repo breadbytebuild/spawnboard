@@ -87,25 +87,35 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
             <span className="text-[11px] text-text-tertiary font-mono shrink-0">
               {screen.width}x{screen.height}
             </span>
-            {hasCode && (
-              <div className="flex items-center gap-1.5 shrink-0">
-                {hasHtml && (
-                  <span className="text-[10px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
-                    HTML
-                  </span>
-                )}
-                {hasCss && (
-                  <span className="text-[10px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
-                    CSS
-                  </span>
-                )}
-                {hasContext && (
-                  <span className="text-[10px] font-mono bg-success/10 text-success px-1.5 py-0.5 rounded">
-                    MD
-                  </span>
-                )}
-              </div>
-            )}
+
+            {/* Always-visible asset type indicator */}
+            <div className="flex items-center gap-1.5 shrink-0">
+              {screen.image_url && (
+                <span className="text-[10px] font-mono bg-surface-elevated text-text-secondary px-1.5 py-0.5 rounded border border-border">
+                  IMG
+                </span>
+              )}
+              {hasHtml && (
+                <span className="text-[10px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
+                  HTML
+                </span>
+              )}
+              {hasCss && (
+                <span className="text-[10px] font-mono bg-accent-muted text-accent px-1.5 py-0.5 rounded">
+                  CSS
+                </span>
+              )}
+              {hasContext && (
+                <span className="text-[10px] font-mono bg-success/10 text-success px-1.5 py-0.5 rounded">
+                  CONTEXT
+                </span>
+              )}
+              {!screen.image_url && !hasHtml && !hasCss && !hasContext && (
+                <span className="text-[10px] font-mono bg-surface-elevated text-text-tertiary px-1.5 py-0.5 rounded border border-border">
+                  IMAGE ONLY
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="flex items-center gap-1">
