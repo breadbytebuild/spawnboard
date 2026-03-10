@@ -39,7 +39,7 @@ export async function GET(
 
   if (error) return apiError("INTERNAL_ERROR", "Failed to fetch share links");
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.dev";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app";
   const links = shareLinks.map((link) => ({
     ...link,
     url: `${baseUrl}/preview/${link.slug}`,
@@ -110,7 +110,7 @@ export async function POST(
 
   if (error) return apiError("INTERNAL_ERROR", "Failed to create share link");
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.dev";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app";
 
   return apiSuccess({
     share_link: {
