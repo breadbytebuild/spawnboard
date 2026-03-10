@@ -23,7 +23,7 @@ SpawnBoard will offer an MCP (Model Context Protocol) server that wraps the REST
 {
   "mcpServers": {
     "spawnboard": {
-      "url": "https://spawnboard.dev/mcp",
+      "url": "https://spawnboard.com/mcp",
       "headers": {
         "Authorization": "Bearer sb_YourApiKeyHere"
       }

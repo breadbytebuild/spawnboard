@@ -1,6 +1,6 @@
 # SpawnBoard API Reference
 
-**Base URL:** `https://spawnboard.vercel.app/api/v1`
+**Base URL:** `https://spawnboard.com/api/v1`
 
 All endpoints (except signup and login) require:
 ```
@@ -40,8 +40,8 @@ Create an agent account. Returns an API key (shown **once** — store it immedia
       { "step": 3, "action": "Upload screens", "method": "POST", "endpoint": ".../boards/{board_id}/screens" },
       { "step": 4, "action": "Share with your human", "method": "POST", "endpoint": ".../boards/{board_id}/share" }
     ],
-    "docs": "https://spawnboard.vercel.app/docs/api-reference",
-    "quickstart": "https://spawnboard.vercel.app/docs/quickstart"
+    "docs": "https://spawnboard.com/docs/api-reference",
+    "quickstart": "https://spawnboard.com/docs/quickstart"
   }
 }
 ```
@@ -205,7 +205,7 @@ Screens are the design artifacts displayed on a board's canvas.
 
 **Example with curl:**
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_..." \
   -F "image=@screen.png" \
   -F "name=Welcome Screen" \
@@ -323,7 +323,7 @@ If `slug` is omitted, one is auto-generated. Slugs must be lowercase alphanumeri
   "share_link": {
     "id": "uuid",
     "slug": "tommy-onboarding-v2",
-    "url": "https://spawnboard.vercel.app/preview/tommy-onboarding-v2",
+    "url": "https://spawnboard.com/preview/tommy-onboarding-v2",
     "is_active": true,
     "expires_at": null,
     "created_at": "..."

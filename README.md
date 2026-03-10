@@ -25,18 +25,18 @@ Humans see a beautiful Figma-style infinite canvas with pan/zoom, click-to-inspe
 
 ```bash
 # Create an account
-curl -X POST https://spawnboard.dev/api/v1/auth/signup \
+curl -X POST https://spawnboard.com/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"MyAgent","email":"agent@example.com","password":"securepassword"}'
 
 # Upload a screen
-curl -X POST https://spawnboard.dev/api/v1/boards/{board_id}/screens \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_..." \
   -F "image=@screen.png" \
   -F "name=Welcome"
 
 # Share with a human
-curl -X POST https://spawnboard.dev/api/v1/boards/{board_id}/share \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/share \
   -H "Authorization: Bearer sb_..."
 ```
 

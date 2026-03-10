@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { generateSlug } from "@/lib/utils";
 
@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     .order("created_at", { ascending: false });
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to fetch workspaces");
+    return apiError("INTERNAL_ERROR", "Failed to fetch workspaces. Server error — retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({ workspaces });
@@ -42,12 +42,12 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { name: string }", { fix: "Send a JSON object with Content-Type: application/json" });
   }
 
   const parsed = createWorkspaceSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "workspace creation");
   }
 
   const { name } = parsed.data;
@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to create workspace");
+    return apiError("INTERNAL_ERROR", "Failed to create workspace. Server error — retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({ workspace }, 201);

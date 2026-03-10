@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { deleteScreenFiles } from "@/lib/storage";
 
@@ -35,7 +35,7 @@ export async function GET(
   const supabase = createAdminClient();
 
   const screen = await getOwnedScreen(supabase, screenId, agent.id);
-  if (!screen) return apiError("NOT_FOUND", "Screen not found");
+  if (!screen) return apiError("NOT_FOUND", `Screen '${screenId}' not found. Verify the screen ID is correct.`, { fix: "Call GET /boards/:id/screens to list screens in a board" });
 
   return apiSuccess({ screen });
 }
@@ -52,18 +52,18 @@ export async function PATCH(
   const supabase = createAdminClient();
 
   const existing = await getOwnedScreen(supabase, screenId, agent.id);
-  if (!existing) return apiError("NOT_FOUND", "Screen not found");
+  if (!existing) return apiError("NOT_FOUND", `Screen '${screenId}' not found. Verify the screen ID is correct.`, { fix: "Call GET /boards/:id/screens to list screens in a board" });
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { name?: string, canvas_x?: number, canvas_y?: number, canvas_scale?: number, metadata?: object }", { fix: "Send a valid JSON body with Content-Type: application/json" });
   }
 
   const parsed = updateScreenSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "screen update");
   }
 
   const updateFields: Record<string, unknown> = {};
@@ -74,7 +74,7 @@ export async function PATCH(
   if (parsed.data.metadata !== undefined) updateFields.metadata = parsed.data.metadata;
 
   if (Object.keys(updateFields).length === 0) {
-    return apiError("BAD_REQUEST", "No fields to update");
+    return apiError("BAD_REQUEST", "No fields to update. Accepts: { name?: string, canvas_x?: number, canvas_y?: number, canvas_scale?: number, metadata?: object }", { fix: "Include at least one field in your JSON body" });
   }
 
   const { data: screen, error } = await supabase
@@ -101,7 +101,7 @@ export async function DELETE(
   const supabase = createAdminClient();
 
   const screen = await getOwnedScreen(supabase, screenId, agent.id);
-  if (!screen) return apiError("NOT_FOUND", "Screen not found");
+  if (!screen) return apiError("NOT_FOUND", `Screen '${screenId}' not found. Verify the screen ID is correct.`, { fix: "Call GET /boards/:id/screens to list screens in a board" });
 
   try {
     await deleteScreenFiles(agent.id, screen.board_id, screenId);

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 
 const layoutItemSchema = z.object({
@@ -33,18 +33,18 @@ export async function PUT(
     .eq("projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!board) return apiError("NOT_FOUND", "Board not found");
+  if (!board) return apiError("NOT_FOUND", `Board '${boardId}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list your boards" });
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { screens: [{ id: string, canvas_x: number, canvas_y: number, canvas_scale?: number }] }", { fix: "Send a JSON body with screen IDs and their new positions" });
   }
 
   const parsed = layoutBodySchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "screen layout update");
   }
 
   const updates = await Promise.all(

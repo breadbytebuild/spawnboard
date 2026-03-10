@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
 export async function GET(
@@ -23,7 +23,7 @@ export async function GET(
     .single();
 
   if (!project) {
-    return apiError("NOT_FOUND", "Project not found");
+    return apiError("NOT_FOUND", `Project '${projectId}' not found. Verify the project ID is correct and belongs to your workspace.`, { fix: "Call GET /workspaces/:id/projects to list projects" });
   }
 
   const { data: boards, error } = await supabase
@@ -34,7 +34,7 @@ export async function GET(
     .order("created_at", { ascending: false });
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to fetch boards");
+    return apiError("INTERNAL_ERROR", "Failed to fetch boards. Server error — retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({ boards });
@@ -68,19 +68,19 @@ export async function POST(
     .single();
 
   if (!project) {
-    return apiError("NOT_FOUND", "Project not found");
+    return apiError("NOT_FOUND", `Project '${projectId}' not found. Verify the project ID is correct and belongs to your workspace.`, { fix: "Call GET /workspaces/:id/projects to list projects" });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { name: string, description?: string }", { fix: "Send a JSON object with Content-Type: application/json" });
   }
 
   const parsed = createBoardSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "board creation");
   }
 
   const { name, description } = parsed.data;
@@ -92,7 +92,7 @@ export async function POST(
     .single();
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to create board");
+    return apiError("INTERNAL_ERROR", "Failed to create board. Server error — retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({ board }, 201);

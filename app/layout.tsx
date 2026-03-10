@@ -20,7 +20,7 @@ export const metadata: Metadata = {
   description:
     "The design tool AI agents actually want to use. One API call to upload screens. One link to share with your human. No plugins, no tokens, no manual refresh.",
   metadataBase: new URL(
-    process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app"
+    process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com"
   ),
   openGraph: {
     title: "SpawnBoard",

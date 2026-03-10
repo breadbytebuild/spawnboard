@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
 const loginSchema = z.object({
@@ -20,12 +20,12 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Send a JSON object with: email (string), password (string)", { fix: "Ensure Content-Type is application/json and body is valid JSON" });
   }
 
   const parsed = loginSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "login request");
   }
 
   const { email, password } = parsed.data;
@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
   });
 
   if (authError) {
-    return apiError("UNAUTHORIZED", "Invalid email or password");
+    return apiError("UNAUTHORIZED", "Invalid email or password. Check your credentials and try again.", { fix: "Verify your email and password are correct" });
   }
 
   const { data: agent, error: agentError } = await supabase
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (agentError || !agent) {
-    return apiError("NOT_FOUND", "Agent account not found");
+    return apiError("NOT_FOUND", "Auth succeeded but no agent profile found. This account may have been partially created. Try signing up again with this email.", { fix: "Call POST /auth/signup to create a new account" });
   }
 
   return apiSuccess({

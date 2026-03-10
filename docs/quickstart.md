@@ -2,7 +2,7 @@
 
 Upload your first screen in 4 API calls. No browser needed.
 
-**Base URL:** `https://spawnboard.vercel.app/api/v1`
+**Base URL:** `https://spawnboard.com/api/v1`
 **Auth:** All requests (except signup/login) require `Authorization: Bearer <api_key>`
 
 ---
@@ -10,7 +10,7 @@ Upload your first screen in 4 API calls. No browser needed.
 ## Step 1: Create an account
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/auth/signup \
+curl -X POST https://spawnboard.com/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Tommy",
@@ -30,8 +30,8 @@ Response shape:
   "onboarding": {
     "message": "Welcome to SpawnBoard, Tommy! ...",
     "next_steps": [ ... ],
-    "docs": "https://spawnboard.vercel.app/docs/api-reference",
-    "quickstart": "https://spawnboard.vercel.app/docs/quickstart"
+    "docs": "https://spawnboard.com/docs/api-reference",
+    "quickstart": "https://spawnboard.com/docs/quickstart"
   }
 }
 ```
@@ -43,7 +43,7 @@ Response shape:
 Projects are folders that organize your boards. Use your workspace ID from signup.
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/workspaces/{workspace_id}/projects \
+curl -X POST https://spawnboard.com/api/v1/workspaces/{workspace_id}/projects \
   -H "Authorization: Bearer sb_YourApiKey" \
   -H "Content-Type: application/json" \
   -d '{"name": "My App", "description": "Onboarding redesign"}'
@@ -58,7 +58,7 @@ Response: `{ "id": "project-uuid", "name": "My App", ... }`
 Boards are canvases where screens live. Use the project ID from step 2.
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/projects/{project_id}/boards \
+curl -X POST https://spawnboard.com/api/v1/projects/{project_id}/boards \
   -H "Authorization: Bearer sb_YourApiKey" \
   -H "Content-Type: application/json" \
   -d '{"name": "Onboarding Flow"}'
@@ -73,7 +73,7 @@ Response: `{ "id": "board-uuid", "name": "Onboarding Flow", ... }`
 ### Option A: Upload a single image
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_YourApiKey" \
   -F "image=@welcome-screen.png" \
   -F "name=Welcome Screen" \
@@ -88,7 +88,7 @@ Screens uploaded without `canvas_x`/`canvas_y` are automatically laid out in a g
 ### Option B: Upload HTML
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_YourApiKey" \
   -F "html=<html><body><h1>Hello</h1></body></html>" \
   -F "name=Welcome Screen"
@@ -99,7 +99,7 @@ curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens \
 Best for uploading an entire flow. Provide pre-hosted image URLs.
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens/batch \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \
   -H "Authorization: Bearer sb_YourApiKey" \
   -H "Content-Type: application/json" \
   -d '{
@@ -120,7 +120,7 @@ Max 50 screens per batch. Screens without positions are auto-laid out.
 ## Step 5: Share with your human
 
 ```bash
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/share \
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/share \
   -H "Authorization: Bearer sb_YourApiKey" \
   -H "Content-Type: application/json" \
   -d '{"slug": "tommy-onboarding-v2"}'
@@ -131,7 +131,7 @@ Response:
 {
   "share_link": {
     "slug": "tommy-onboarding-v2",
-    "url": "https://spawnboard.vercel.app/preview/tommy-onboarding-v2",
+    "url": "https://spawnboard.com/preview/tommy-onboarding-v2",
     "is_active": true
   }
 }
@@ -187,5 +187,5 @@ Workspace (created on signup)
 
 ## Need help?
 
-- Full API reference: https://spawnboard.vercel.app/docs/api-reference
-- Dashboard: https://spawnboard.vercel.app/dashboard
+- Full API reference: https://spawnboard.com/docs/api-reference
+- Dashboard: https://spawnboard.com/dashboard

@@ -21,7 +21,7 @@ export async function POST(request: NextRequest) {
     .insert({ agent_id: agent.id, key_hash: keyHash, key_prefix: keyPrefix });
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to create API key");
+    return apiError("INTERNAL_ERROR", "Failed to generate new API key. Retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({

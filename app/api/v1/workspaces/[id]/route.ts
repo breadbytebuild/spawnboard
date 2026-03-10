@@ -21,7 +21,7 @@ export async function GET(
     .single();
 
   if (error || !workspace) {
-    return apiError("NOT_FOUND", "Workspace not found");
+    return apiError("NOT_FOUND", `Workspace '${id}' not found. Verify the workspace ID is correct and belongs to your account.`, { fix: "Call GET /workspaces to list your workspaces" });
   }
 
   return apiSuccess({ workspace });

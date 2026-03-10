@@ -21,7 +21,7 @@ export async function DELETE(
     .eq("boards.projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!shareLink) return apiError("NOT_FOUND", "Share link not found");
+  if (!shareLink) return apiError("NOT_FOUND", `Share link '${shareLinkId}' not found. Verify the share link ID (not the slug).`, { fix: "Call GET /boards/:id/share to list share links for a board" });
 
   const { error } = await supabase
     .from("share_links")

@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { autoLayoutPosition } from "@/lib/canvas/layout";
 
@@ -39,18 +39,18 @@ export async function POST(
     .eq("projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!board) return apiError("NOT_FOUND", "Board not found");
+  if (!board) return apiError("NOT_FOUND", `Board '${boardId}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list your boards" });
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Expected: { screens: [{ name: string, image_url?: string, html_url?: string, width?: number, height?: number, canvas_x?: number, canvas_y?: number }] }", { fix: "Send a JSON body with Content-Type: application/json containing a 'screens' array" });
   }
 
   const parsed = batchBodySchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "batch screen upload");
   }
 
   const { count } = await supabase
@@ -100,7 +100,7 @@ export async function POST(
     .insert(rows)
     .select();
 
-  if (error) return apiError("INTERNAL_ERROR", "Failed to create screens");
+  if (error) return apiError("INTERNAL_ERROR", "Failed to save batch screens. Server error — retry the request.", { fix: "Retry the request" });
 
   return apiSuccess({ screens }, 201);
 }

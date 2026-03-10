@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { uploadScreenImage, uploadHtmlFile } from "@/lib/storage";
 import { autoLayoutPosition } from "@/lib/canvas/layout";
@@ -33,7 +33,7 @@ export async function GET(
     .eq("projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!board) return apiError("NOT_FOUND", "Board not found");
+  if (!board) return apiError("NOT_FOUND", `Board '${boardId}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list your boards" });
 
   const { data: screens, error } = await supabase
     .from("screens")
@@ -65,13 +65,13 @@ export async function POST(
     .eq("projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!board) return apiError("NOT_FOUND", "Board not found");
+  if (!board) return apiError("NOT_FOUND", `Board '${boardId}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list your boards" });
 
   let formData: FormData;
   try {
     formData = await request.formData();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid form data");
+    return apiError("BAD_REQUEST", "Invalid request body. Screen upload requires multipart/form-data with at least: name (text field) and image (file) or html (text field).", { fix: "Use Content-Type: multipart/form-data. Send -F 'image=@file.png' -F 'name=Screen Name'" });
   }
 
   const getString = (key: string) => {
@@ -90,7 +90,7 @@ export async function POST(
 
   const parsed = createScreenSchema.safeParse(fields);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "screen upload");
   }
 
   const { name, width = 393, height = 852, metadata } = parsed.data;
@@ -98,7 +98,7 @@ export async function POST(
   const htmlContent = formData.get("html") as string | null;
 
   if (!imageFile && !htmlContent) {
-    return apiError("BAD_REQUEST", "Either image or html must be provided");
+    return apiError("BAD_REQUEST", "Missing screen content. You must provide either an 'image' file (PNG/JPEG/WebP, max 10MB) or an 'html' text field (max 1MB), or both.", { fix: "Add -F 'image=@yourfile.png' or -F 'html=<html>...</html>' to your request" });
   }
 
   const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -107,18 +107,15 @@ export async function POST(
 
   if (imageFile && imageFile instanceof File) {
     if (imageFile.size > MAX_IMAGE_SIZE) {
-      return apiError("BAD_REQUEST", "Image must be under 10MB");
+      return apiError("BAD_REQUEST", "Image file too large (max 10MB). Resize or compress the image and retry.", { fix: "Reduce image file size to under 10MB" });
     }
     if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
-      return apiError(
-        "BAD_REQUEST",
-        "Image must be PNG, JPEG, or WebP"
-      );
+      return apiError("BAD_REQUEST", `Unsupported image format. Accepted formats: image/png, image/jpeg, image/webp. Got: ${imageFile.type}`, { fix: "Convert your image to PNG, JPEG, or WebP format" });
     }
   }
 
   if (htmlContent && htmlContent.length > MAX_HTML_SIZE) {
-    return apiError("BAD_REQUEST", "HTML content must be under 1MB");
+    return apiError("BAD_REQUEST", "HTML content too large (max 1MB). Reduce the HTML size and retry.", { fix: "Simplify the HTML or remove inline assets" });
   }
 
   let parsedMetadata = {};
@@ -126,7 +123,7 @@ export async function POST(
     try {
       parsedMetadata = JSON.parse(metadata);
     } catch {
-      return apiError("BAD_REQUEST", "Invalid metadata JSON");
+      return apiError("BAD_REQUEST", "The 'metadata' field must be a valid JSON string. Example: '{\"device\":\"iphone\"}'", { fix: "Ensure metadata is a properly escaped JSON string" });
     }
   }
 
@@ -196,7 +193,7 @@ export async function POST(
     .select()
     .single();
 
-  if (error) return apiError("INTERNAL_ERROR", "Failed to create screen");
+  if (error) return apiError("INTERNAL_ERROR", "Failed to save screen to database. Server error — retry the request.", { fix: "Retry the request" });
 
   return apiSuccess({ screen }, 201);
 }

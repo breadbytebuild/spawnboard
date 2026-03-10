@@ -133,7 +133,7 @@ export default function HomePage() {
                     </span>
                   </p>
                   <p className="text-accent mt-1 ml-4">
-                    → spawnboard.dev/preview/onboarding-flow
+                    → spawnboard.com/preview/onboarding-flow
                   </p>
                 </div>
               </div>

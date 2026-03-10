@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 
 export async function GET(
@@ -23,7 +23,7 @@ export async function GET(
     .single();
 
   if (!board) {
-    return apiError("NOT_FOUND", "Board not found");
+    return apiError("NOT_FOUND", `Board '${id}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list boards" });
   }
 
   const { data: screens } = await supabase
@@ -66,24 +66,24 @@ export async function PATCH(
     .single();
 
   if (!existing) {
-    return apiError("NOT_FOUND", "Board not found");
+    return apiError("NOT_FOUND", `Board '${id}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list boards" });
   }
 
   let body: unknown;
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Accepts: { name?: string, description?: string, canvas_state?: object }", { fix: "Send a JSON object with at least one field to update" });
   }
 
   const parsed = updateBoardSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "board update");
   }
 
   const updates = parsed.data;
   if (Object.keys(updates).length === 0) {
-    return apiError("BAD_REQUEST", "No fields to update");
+    return apiError("BAD_REQUEST", "No fields to update. Provide at least one of: name, description, canvas_state", { fix: "Include at least one field in your JSON body" });
   }
 
   const { data: board, error } = await supabase
@@ -94,7 +94,7 @@ export async function PATCH(
     .single();
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to update board");
+    return apiError("INTERNAL_ERROR", "Failed to update board. Server error — retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({ board });
@@ -118,13 +118,13 @@ export async function DELETE(
     .single();
 
   if (!existing) {
-    return apiError("NOT_FOUND", "Board not found");
+    return apiError("NOT_FOUND", `Board '${id}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list boards" });
   }
 
   const { error } = await supabase.from("boards").delete().eq("id", id);
 
   if (error) {
-    return apiError("INTERNAL_ERROR", "Failed to delete board");
+    return apiError("INTERNAL_ERROR", "Failed to delete board. Server error — retry the request.", { fix: "Retry the request" });
   }
 
   return apiSuccess({ deleted: true });

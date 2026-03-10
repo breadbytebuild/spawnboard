@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { authenticateRequest, isAuthError } from "@/lib/api/auth";
 import { generateSlug } from "@/lib/utils";
 
@@ -28,7 +28,7 @@ export async function GET(
     .eq("projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!board) return apiError("NOT_FOUND", "Board not found");
+  if (!board) return apiError("NOT_FOUND", `Board '${boardId}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list your boards" });
 
   const { data: shareLinks, error } = await supabase
     .from("share_links")
@@ -39,7 +39,7 @@ export async function GET(
 
   if (error) return apiError("INTERNAL_ERROR", "Failed to fetch share links");
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
   const links = shareLinks.map((link) => ({
     ...link,
     url: `${baseUrl}/preview/${link.slug}`,
@@ -66,7 +66,7 @@ export async function POST(
     .eq("projects.workspaces.agent_id", agent.id)
     .single();
 
-  if (!board) return apiError("NOT_FOUND", "Board not found");
+  if (!board) return apiError("NOT_FOUND", `Board '${boardId}' not found. Verify the board ID is correct and belongs to your project.`, { fix: "Call GET /projects/:id/boards to list your boards" });
 
   let body: unknown;
   try {
@@ -77,7 +77,7 @@ export async function POST(
 
   const parsed = createShareSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "share link creation");
   }
 
   const slug = parsed.data.slug || `${generateSlug(board.name)}-${crypto.randomUUID().slice(0, 8)}`;
@@ -89,7 +89,7 @@ export async function POST(
     .single();
 
   if (existing) {
-    return apiError("CONFLICT", "A share link with this slug already exists");
+    return apiError("CONFLICT", `The slug '${slug}' is already taken. Choose a different slug or omit the slug field to auto-generate one.`, { fix: "Use a different slug value or let SpawnBoard generate one" });
   }
 
   const insertData: Record<string, unknown> = {
@@ -108,9 +108,9 @@ export async function POST(
     .select()
     .single();
 
-  if (error) return apiError("INTERNAL_ERROR", "Failed to create share link");
+  if (error) return apiError("INTERNAL_ERROR", "Failed to create share link. Server error — retry the request.", { fix: "Retry the request" });
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
 
   return apiSuccess({
     share_link: {

@@ -22,13 +22,13 @@ export default function QuickstartPage() {
           </p>
           <div className="flex gap-3 mb-12">
             <span className="text-xs font-mono bg-surface border border-border rounded-md px-2 py-1 text-text-secondary">
-              Base URL: <span className="text-accent">spawnboard.vercel.app/api/v1</span>
+              Base URL: <span className="text-accent">spawnboard.com/api/v1</span>
             </span>
           </div>
 
           {/* Step 1 */}
           <Step number="1" title="Create an account">
-            <CodeBlock>{`curl -X POST https://spawnboard.vercel.app/api/v1/auth/signup \\
+            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/auth/signup \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Tommy",
@@ -49,7 +49,7 @@ export default function QuickstartPage() {
             <p className="text-sm text-text-secondary mb-3">
               Use the <code className="text-accent">workspace.id</code> from the signup response.
             </p>
-            <CodeBlock>{`curl -X POST https://spawnboard.vercel.app/api/v1/workspaces/{workspace_id}/projects \\
+            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/workspaces/{workspace_id}/projects \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "My App", "description": "Onboarding redesign"}'`}</CodeBlock>
@@ -58,19 +58,19 @@ export default function QuickstartPage() {
           {/* Step 3 */}
           <Step number="3" title="Create a board and upload screens">
             <CodeBlock>{`# Create a board
-curl -X POST https://spawnboard.vercel.app/api/v1/projects/{project_id}/boards \\
+curl -X POST https://spawnboard.com/api/v1/projects/{project_id}/boards \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "Onboarding Flow"}'
 
 # Upload a screen (image)
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens \\
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -F "image=@screen.png" \\
   -F "name=Welcome Screen"
 
 # Or batch upload multiple screens at once
-curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens/batch \\
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -87,13 +87,13 @@ curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/screens/batc
 
           {/* Step 4 */}
           <Step number="4" title="Share with your human">
-            <CodeBlock>{`curl -X POST https://spawnboard.vercel.app/api/v1/boards/{board_id}/share \\
+            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/share \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{"slug": "my-onboarding-flow"}'`}</CodeBlock>
             <div className="mt-3 p-3 rounded-lg bg-accent-muted border border-accent/20">
               <p className="text-sm text-accent font-mono">
-                → spawnboard.vercel.app/preview/my-onboarding-flow
+                → spawnboard.com/preview/my-onboarding-flow
               </p>
             </div>
             <p className="text-sm text-text-secondary mt-3">

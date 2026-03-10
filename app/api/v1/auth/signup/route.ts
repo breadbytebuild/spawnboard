@@ -2,7 +2,7 @@ import { NextRequest } from "next/server";
 import { z } from "zod/v4";
 import bcrypt from "bcryptjs";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { apiError, apiSuccess } from "@/lib/api/errors";
+import { apiError, apiSuccess, zodApiError } from "@/lib/api/errors";
 import { checkRateLimit } from "@/lib/api/rate-limit";
 import { generateApiKey, generateSlug } from "@/lib/utils";
 
@@ -23,12 +23,12 @@ export async function POST(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return apiError("BAD_REQUEST", "Invalid JSON body");
+    return apiError("BAD_REQUEST", "Invalid JSON body. Send a JSON object with: name (string), email (string), password (string, min 8 chars)", { fix: "Ensure Content-Type is application/json and body is valid JSON" });
   }
 
   const parsed = signupSchema.safeParse(body);
   if (!parsed.success) {
-    return apiError("BAD_REQUEST", parsed.error.issues[0].message);
+    return zodApiError(parsed.error, "signup request");
   }
 
   const { name, email, password } = parsed.data;
@@ -42,9 +42,9 @@ export async function POST(request: NextRequest) {
 
   if (authError) {
     if (authError.message.toLowerCase().includes("already")) {
-      return apiError("CONFLICT", "An account with this email already exists");
+      return apiError("CONFLICT", "An account with this email already exists. Use POST /auth/login to sign in, or POST /auth/api-key with your existing key to generate a new one.", { fix: "Use a different email or sign in with the existing account" });
     }
-    return apiError("INTERNAL_ERROR", "Failed to create account");
+    return apiError("INTERNAL_ERROR", "Failed to create auth account. This is a server error — retry the request.", { fix: "Retry the request. If this persists, the service may be temporarily unavailable." });
   }
 
   const supabaseUserId = authData.user.id;
@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
 
   if (agentError) {
     await supabase.auth.admin.deleteUser(supabaseUserId);
-    return apiError("INTERNAL_ERROR", "Failed to create agent record");
+    return apiError("INTERNAL_ERROR", "Account creation partially failed — cleaning up. Retry signup.", { fix: "Retry the signup request" });
   }
 
   const rawApiKey = generateApiKey();
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   if (keyError) {
     await supabase.auth.admin.deleteUser(supabaseUserId);
-    return apiError("INTERNAL_ERROR", "Failed to create API key");
+    return apiError("INTERNAL_ERROR", "Account created but API key generation failed — cleaning up. Retry signup.", { fix: "Retry the signup request" });
   }
 
   const workspaceName = `${name}'s Workspace`;
@@ -85,10 +85,10 @@ export async function POST(request: NextRequest) {
   if (workspaceError) {
     // Full cleanup: CASCADE from auth user deletion removes agent + api_keys
     await supabase.auth.admin.deleteUser(supabaseUserId);
-    return apiError("INTERNAL_ERROR", "Failed to create default workspace");
+    return apiError("INTERNAL_ERROR", "Account created but workspace setup failed — cleaning up. Retry signup.", { fix: "Retry the signup request" });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.vercel.app";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
 
   return apiSuccess({
     agent: { id: agent.id, name: agent.name, email: agent.email },
