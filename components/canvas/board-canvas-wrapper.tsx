@@ -56,8 +56,10 @@ export function BoardCanvasWrapper({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ board_id: boardId, display_name: name }),
       }).catch(() => {});
+      // Refresh server components (sidebar, browse page) with new name
+      router.refresh();
     },
-    [boardId]
+    [boardId, router]
   );
 
   const handleAddComment = useCallback(
