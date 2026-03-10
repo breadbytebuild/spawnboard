@@ -32,8 +32,9 @@ export async function GET(
 
   const { data: shareLinks, error } = await supabase
     .from("share_links")
-    .select("*")
+    .select("id, slug, is_active, expires_at, created_at")
     .eq("board_id", boardId)
+    .eq("is_active", true)
     .order("created_at", { ascending: false });
 
   if (error) return apiError("INTERNAL_ERROR", "Failed to fetch share links");

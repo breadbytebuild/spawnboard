@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { X, Download, ExternalLink } from "lucide-react";
 import Image from "next/image";
 import { Button } from "@/components/ui/button";
@@ -11,12 +12,34 @@ interface ScreenInspectorProps {
 }
 
 export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
+  const dialogRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    // Focus the dialog on mount
+    dialogRef.current?.focus();
+
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div
+      ref={dialogRef}
+      role="dialog"
+      aria-modal="true"
+      aria-label={`Inspect screen: ${screen.name}`}
+      tabIndex={-1}
+      className="fixed inset-0 z-50 flex items-center justify-center focus:outline-none"
+    >
       {/* Backdrop */}
       <div
         className="absolute inset-0 bg-black/80 backdrop-blur-sm"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Content */}
@@ -28,26 +51,40 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
               {screen.name}
             </h2>
             <p className="text-xs text-text-tertiary font-mono">
-              {screen.width} x {screen.height} &middot;{" "}
-              {screen.source_type}
+              {screen.width} x {screen.height} &middot; {screen.source_type}
             </p>
           </div>
           <div className="flex items-center gap-2">
             {screen.image_url && (
               <Button variant="ghost" size="icon" asChild>
-                <a href={screen.image_url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={screen.image_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Download image"
+                >
                   <Download className="w-4 h-4" />
                 </a>
               </Button>
             )}
             {screen.html_url && (
               <Button variant="ghost" size="icon" asChild>
-                <a href={screen.html_url} target="_blank" rel="noopener noreferrer">
+                <a
+                  href={screen.html_url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Open HTML in new tab"
+                >
                   <ExternalLink className="w-4 h-4" />
                 </a>
               </Button>
             )}
-            <Button variant="ghost" size="icon" onClick={onClose}>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={onClose}
+              aria-label="Close inspector"
+            >
               <X className="w-4 h-4" />
             </Button>
           </div>
@@ -70,7 +107,7 @@ export function ScreenInspector({ screen, onClose }: ScreenInspectorProps) {
               title={screen.name}
               className="border-0"
               style={{ width: screen.width, height: screen.height }}
-              sandbox="allow-same-origin"
+              sandbox=""
             />
           ) : (
             <div

@@ -4,11 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { ScreenCard } from "./screen-card";
 import { CanvasToolbar } from "./canvas-toolbar";
 import { ScreenInspector } from "./screen-inspector";
-import {
-  MIN_ZOOM,
-  MAX_ZOOM,
-  clampZoom,
-} from "@/lib/canvas/viewport";
+import { MIN_ZOOM, MAX_ZOOM, clampZoom } from "@/lib/canvas/viewport";
 import { fitToViewBounds } from "@/lib/canvas/layout";
 
 export interface Screen {
@@ -41,10 +37,21 @@ export function BoardCanvas({
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [zoom, setZoom] = useState(1);
   const [isPanning, setIsPanning] = useState(false);
-  const [panStart, setPanStart] = useState({ x: 0, y: 0 });
+  const panStartRef = useRef({ x: 0, y: 0 });
   const [selectedScreen, setSelectedScreen] = useState<Screen | null>(null);
   const [showGrid, setShowGrid] = useState(true);
 
+  // Use refs for values needed in native event handlers to avoid stale closures
+  const offsetRef = useRef(offset);
+  const zoomRef = useRef(zoom);
+  useEffect(() => {
+    offsetRef.current = offset;
+  }, [offset]);
+  useEffect(() => {
+    zoomRef.current = zoom;
+  }, [zoom]);
+
+  // Fit to view on initial load
   useEffect(() => {
     if (screens.length > 0 && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -54,62 +61,77 @@ export function BoardCanvas({
     }
   }, [screens.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const handleWheel = useCallback(
-    (e: React.WheelEvent) => {
+  // Native wheel handler with { passive: false } to allow preventDefault
+  useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    const onWheel = (e: WheelEvent) => {
       e.preventDefault();
+      const currentZoom = zoomRef.current;
+      const currentOffset = offsetRef.current;
 
       if (e.ctrlKey || e.metaKey) {
-        const rect = containerRef.current?.getBoundingClientRect();
-        if (!rect) return;
-
+        const rect = el.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = e.clientY - rect.top;
-
         const delta = -e.deltaY * 0.002;
-        const newZoom = clampZoom(zoom + delta);
-        const ratio = newZoom / zoom;
+        const newZoom = clampZoom(currentZoom + delta);
+        const ratio = newZoom / currentZoom;
 
         setOffset({
-          x: mouseX - (mouseX - offset.x) * ratio,
-          y: mouseY - (mouseY - offset.y) * ratio,
+          x: mouseX - (mouseX - currentOffset.x) * ratio,
+          y: mouseY - (mouseY - currentOffset.y) * ratio,
         });
         setZoom(newZoom);
       } else {
         setOffset({
-          x: offset.x - e.deltaX,
-          y: offset.y - e.deltaY,
+          x: currentOffset.x - e.deltaX,
+          y: currentOffset.y - e.deltaY,
         });
       }
-    },
-    [zoom, offset]
-  );
+    };
+
+    el.addEventListener("wheel", onWheel, { passive: false });
+    return () => el.removeEventListener("wheel", onWheel);
+  }, []);
+
+  // Window-level mouse handlers for pan (prevents stuck state when cursor leaves)
+  useEffect(() => {
+    if (!isPanning) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      setOffset({
+        x: e.clientX - panStartRef.current.x,
+        y: e.clientY - panStartRef.current.y,
+      });
+    };
+
+    const onMouseUp = () => {
+      setIsPanning(false);
+    };
+
+    window.addEventListener("mousemove", onMouseMove);
+    window.addEventListener("mouseup", onMouseUp);
+    return () => {
+      window.removeEventListener("mousemove", onMouseMove);
+      window.removeEventListener("mouseup", onMouseUp);
+    };
+  }, [isPanning]);
 
   const handleMouseDown = useCallback(
     (e: React.MouseEvent) => {
       if (e.button === 1 || (e.button === 0 && e.altKey)) {
         e.preventDefault();
         setIsPanning(true);
-        setPanStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+        panStartRef.current = {
+          x: e.clientX - offset.x,
+          y: e.clientY - offset.y,
+        };
       }
     },
     [offset]
   );
-
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (isPanning) {
-        setOffset({
-          x: e.clientX - panStart.x,
-          y: e.clientY - panStart.y,
-        });
-      }
-    },
-    [isPanning, panStart]
-  );
-
-  const handleMouseUp = useCallback(() => {
-    setIsPanning(false);
-  }, []);
 
   const handleZoomIn = useCallback(() => {
     const rect = containerRef.current?.getBoundingClientRect();
@@ -173,11 +195,7 @@ export function BoardCanvas({
         ref={containerRef}
         className="w-full h-full"
         style={{ cursor: isPanning ? "grabbing" : "default" }}
-        onWheel={handleWheel}
         onMouseDown={handleMouseDown}
-        onMouseMove={handleMouseMove}
-        onMouseUp={handleMouseUp}
-        onMouseLeave={handleMouseUp}
       >
         {/* Grid dots */}
         {showGrid && (

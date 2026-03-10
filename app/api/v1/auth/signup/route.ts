@@ -83,6 +83,8 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (workspaceError) {
+    // Full cleanup: CASCADE from auth user deletion removes agent + api_keys
+    await supabase.auth.admin.deleteUser(supabaseUserId);
     return apiError("INTERNAL_ERROR", "Failed to create default workspace");
   }
 

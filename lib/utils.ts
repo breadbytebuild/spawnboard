@@ -6,11 +6,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function generateSlug(name: string): string {
-  return name
+  const slug = name
     .toLowerCase()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-|-$/g, "")
     .slice(0, 60);
+
+  // Fallback for names that produce empty slugs (e.g. "!!!")
+  return slug || "untitled";
 }
 
 export function generateApiKey(): string {

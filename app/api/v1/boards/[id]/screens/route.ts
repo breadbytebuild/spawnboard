@@ -89,11 +89,31 @@ export async function POST(
   }
 
   const { name, width = 393, height = 852, metadata } = parsed.data;
-  const imageFile = formData.get("image") as File | null;
+  const imageFile = formData.get("image");
   const htmlContent = formData.get("html") as string | null;
 
   if (!imageFile && !htmlContent) {
     return apiError("BAD_REQUEST", "Either image or html must be provided");
+  }
+
+  const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
+  const MAX_HTML_SIZE = 1 * 1024 * 1024; // 1MB
+  const ALLOWED_IMAGE_TYPES = ["image/png", "image/jpeg", "image/webp"];
+
+  if (imageFile && imageFile instanceof File) {
+    if (imageFile.size > MAX_IMAGE_SIZE) {
+      return apiError("BAD_REQUEST", "Image must be under 10MB");
+    }
+    if (!ALLOWED_IMAGE_TYPES.includes(imageFile.type)) {
+      return apiError(
+        "BAD_REQUEST",
+        "Image must be PNG, JPEG, or WebP"
+      );
+    }
+  }
+
+  if (htmlContent && htmlContent.length > MAX_HTML_SIZE) {
+    return apiError("BAD_REQUEST", "HTML content must be under 1MB");
   }
 
   let parsedMetadata = {};
@@ -110,7 +130,7 @@ export async function POST(
   let htmlUrl: string | null = null;
 
   try {
-    if (imageFile) {
+    if (imageFile && imageFile instanceof File) {
       const buffer = Buffer.from(await imageFile.arrayBuffer());
       imageUrl = await uploadScreenImage(
         agent.id,
@@ -130,7 +150,8 @@ export async function POST(
   }
 
   let sourceType: "image" | "html" | "html_with_screenshot";
-  if (imageFile && htmlContent) {
+  const hasImage = imageFile instanceof File;
+  if (hasImage && htmlContent) {
     sourceType = "html_with_screenshot";
   } else if (htmlContent) {
     sourceType = "html";

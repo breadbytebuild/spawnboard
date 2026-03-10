@@ -8,7 +8,12 @@ export async function uploadScreenImage(
   contentType: string
 ): Promise<string> {
   const supabase = createAdminClient();
-  const ext = contentType === "image/png" ? "png" : "jpg";
+  const EXT_MAP: Record<string, string> = {
+    "image/png": "png",
+    "image/jpeg": "jpg",
+    "image/webp": "webp",
+  };
+  const ext = EXT_MAP[contentType] || "png";
   const path = `${agentId}/${boardId}/${screenId}.${ext}`;
 
   const { error } = await supabase.storage
@@ -65,6 +70,7 @@ export async function deleteScreenFiles(
   const paths = [
     `${agentId}/${boardId}/${screenId}.png`,
     `${agentId}/${boardId}/${screenId}.jpg`,
+    `${agentId}/${boardId}/${screenId}.webp`,
     `${agentId}/${boardId}/${screenId}.html`,
   ];
 
