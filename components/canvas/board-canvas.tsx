@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { ScreenCard } from "./screen-card";
 import { CanvasToolbar } from "./canvas-toolbar";
 import { ScreenInspector } from "./screen-inspector";
@@ -31,6 +31,29 @@ interface BoardCanvasProps {
   readOnly?: boolean;
 }
 
+interface ViewportRect {
+  left: number;
+  top: number;
+  right: number;
+  bottom: number;
+}
+
+const VIEWPORT_BUFFER = 1.5;
+
+function isScreenNearViewport(
+  screen: Screen,
+  viewport: ViewportRect
+): boolean {
+  const sw = screen.width * screen.canvas_scale;
+  const sh = screen.height * screen.canvas_scale;
+  return (
+    screen.canvas_x + sw > viewport.left &&
+    screen.canvas_x < viewport.right &&
+    screen.canvas_y + sh > viewport.top &&
+    screen.canvas_y < viewport.bottom
+  );
+}
+
 export function BoardCanvas({
   screens,
   boardName,
@@ -44,7 +67,6 @@ export function BoardCanvas({
   const [selectedScreen, setSelectedScreen] = useState<Screen | null>(null);
   const [showGrid, setShowGrid] = useState(true);
 
-  // Use refs for values needed in native event handlers to avoid stale closures
   const offsetRef = useRef(offset);
   const zoomRef = useRef(zoom);
   useEffect(() => {
@@ -54,7 +76,24 @@ export function BoardCanvas({
     zoomRef.current = zoom;
   }, [zoom]);
 
-  // Fit to view on initial load
+  // Compute the visible canvas rect (in canvas coordinates) with a buffer
+  const viewportRect = useMemo((): ViewportRect => {
+    const el = containerRef.current;
+    if (!el) return { left: -1e6, top: -1e6, right: 1e6, bottom: 1e6 };
+
+    const w = el.clientWidth;
+    const h = el.clientHeight;
+    const bufferW = w * VIEWPORT_BUFFER;
+    const bufferH = h * VIEWPORT_BUFFER;
+
+    return {
+      left: (-offset.x - bufferW) / zoom,
+      top: (-offset.y - bufferH) / zoom,
+      right: (-offset.x + w + bufferW) / zoom,
+      bottom: (-offset.y + h + bufferH) / zoom,
+    };
+  }, [offset, zoom]);
+
   useEffect(() => {
     if (screens.length > 0 && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -64,7 +103,6 @@ export function BoardCanvas({
     }
   }, [screens.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Native wheel handler with { passive: false } to allow preventDefault
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
@@ -99,7 +137,6 @@ export function BoardCanvas({
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
 
-  // Window-level mouse handlers for pan (prevents stuck state when cursor leaves)
   useEffect(() => {
     if (!isPanning) return;
 
@@ -139,29 +176,23 @@ export function BoardCanvas({
   const handleZoomIn = useCallback(() => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const newZoom = clampZoom(zoom + 0.15);
-    const ratio = newZoom / zoom;
-    setOffset({
-      x: centerX - (centerX - offset.x) * ratio,
-      y: centerY - (centerY - offset.y) * ratio,
-    });
-    setZoom(newZoom);
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const nz = clampZoom(zoom + 0.15);
+    const r = nz / zoom;
+    setOffset({ x: cx - (cx - offset.x) * r, y: cy - (cy - offset.y) * r });
+    setZoom(nz);
   }, [zoom, offset]);
 
   const handleZoomOut = useCallback(() => {
     const rect = containerRef.current?.getBoundingClientRect();
     if (!rect) return;
-    const centerX = rect.width / 2;
-    const centerY = rect.height / 2;
-    const newZoom = clampZoom(zoom - 0.15);
-    const ratio = newZoom / zoom;
-    setOffset({
-      x: centerX - (centerX - offset.x) * ratio,
-      y: centerY - (centerY - offset.y) * ratio,
-    });
-    setZoom(newZoom);
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const nz = clampZoom(zoom - 0.15);
+    const r = nz / zoom;
+    setOffset({ x: cx - (cx - offset.x) * r, y: cy - (cy - offset.y) * r });
+    setZoom(nz);
   }, [zoom, offset]);
 
   const handleFitToView = useCallback(() => {
@@ -176,15 +207,12 @@ export function BoardCanvas({
     (value: number) => {
       const rect = containerRef.current?.getBoundingClientRect();
       if (!rect) return;
-      const centerX = rect.width / 2;
-      const centerY = rect.height / 2;
-      const newZoom = clampZoom(value);
-      const ratio = newZoom / zoom;
-      setOffset({
-        x: centerX - (centerX - offset.x) * ratio,
-        y: centerY - (centerY - offset.y) * ratio,
-      });
-      setZoom(newZoom);
+      const cx = rect.width / 2;
+      const cy = rect.height / 2;
+      const nz = clampZoom(value);
+      const r = nz / zoom;
+      setOffset({ x: cx - (cx - offset.x) * r, y: cy - (cy - offset.y) * r });
+      setZoom(nz);
     },
     [zoom, offset]
   );
@@ -193,14 +221,12 @@ export function BoardCanvas({
 
   return (
     <div className="relative w-full h-full overflow-hidden bg-background">
-      {/* Canvas */}
       <div
         ref={containerRef}
         className="w-full h-full"
         style={{ cursor: isPanning ? "grabbing" : "default" }}
         onMouseDown={handleMouseDown}
       >
-        {/* Grid dots */}
         {showGrid && (
           <div
             className="absolute inset-0 pointer-events-none"
@@ -214,7 +240,6 @@ export function BoardCanvas({
           />
         )}
 
-        {/* Transform layer */}
         <div
           className="absolute top-0 left-0 origin-top-left"
           style={{
@@ -227,13 +252,13 @@ export function BoardCanvas({
               key={screen.id}
               screen={screen}
               zoom={zoom}
+              isNearViewport={isScreenNearViewport(screen, viewportRect)}
               onClick={() => setSelectedScreen(screen)}
             />
           ))}
         </div>
       </div>
 
-      {/* Toolbar */}
       <CanvasToolbar
         zoom={zoom}
         minZoom={MIN_ZOOM}
@@ -246,7 +271,6 @@ export function BoardCanvas({
         onToggleGrid={() => setShowGrid(!showGrid)}
       />
 
-      {/* Board name */}
       <div className="absolute top-4 left-4 flex items-center gap-3">
         <h1 className="text-sm font-medium text-text-secondary">
           {boardName}
@@ -258,7 +282,6 @@ export function BoardCanvas({
         )}
       </div>
 
-      {/* Screen inspector */}
       {selectedScreen && (
         <ScreenInspector
           screen={selectedScreen}

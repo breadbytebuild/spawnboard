@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import { cn } from "@/lib/utils";
 import type { Screen } from "./board-canvas";
@@ -7,14 +8,54 @@ import type { Screen } from "./board-canvas";
 interface ScreenCardProps {
   screen: Screen;
   zoom: number;
+  isNearViewport: boolean;
   onClick?: () => void;
 }
 
-export function ScreenCard({ screen, zoom, onClick }: ScreenCardProps) {
+/**
+ * Render priority:
+ * 1. If near viewport AND has source_html → live iframe (with CSS injected)
+ * 2. If has image_url → static image
+ * 3. Placeholder
+ *
+ * When far from viewport, iframes are replaced with image fallback or
+ * a lightweight placeholder to keep the canvas smooth at 300+ screens.
+ */
+export function ScreenCard({
+  screen,
+  zoom,
+  isNearViewport,
+  onClick,
+}: ScreenCardProps) {
   const showLabel = zoom > 0.3;
   const showBadges = zoom > 0.4;
   const hasCode = !!screen.source_html || !!screen.source_css;
   const hasContext = !!screen.context_md;
+
+  const canRenderLive = !!screen.source_html && isNearViewport;
+  const hasImage = !!screen.image_url;
+
+  // Prefer live iframe when near viewport and HTML is available.
+  // Fall back to image. Fall back to placeholder.
+  const renderMode: "iframe" | "image" | "placeholder" = canRenderLive
+    ? "iframe"
+    : hasImage
+      ? "image"
+      : "placeholder";
+
+  const iframeSrcDoc = useMemo(() => {
+    if (!screen.source_html) return "";
+    if (screen.source_css) {
+      return screen.source_html.replace(
+        "</head>",
+        `<style>${screen.source_css}</style></head>`
+      );
+    }
+    return screen.source_html;
+  }, [screen.source_html, screen.source_css]);
+
+  // Track whether the iframe has loaded for a smooth fade-in
+  const [iframeLoaded, setIframeLoaded] = useState(false);
 
   return (
     <div
@@ -33,19 +74,52 @@ export function ScreenCard({ screen, zoom, onClick }: ScreenCardProps) {
           "w-full h-full rounded-lg overflow-hidden border border-border/50 bg-surface",
           "transition-shadow duration-200",
           "hover:border-accent/50 hover:shadow-lg hover:shadow-accent/5",
-          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent"
+          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
+          "relative"
         )}
       >
-        {screen.image_url ? (
+        {renderMode === "iframe" && (
+          <>
+            {/* Image underneath as loading fallback */}
+            {hasImage && (
+              <Image
+                src={screen.image_url!}
+                alt={screen.name}
+                width={screen.width}
+                height={screen.height}
+                className={cn(
+                  "absolute inset-0 w-full h-full object-cover transition-opacity duration-300",
+                  iframeLoaded ? "opacity-0" : "opacity-100"
+                )}
+                unoptimized
+              />
+            )}
+            <iframe
+              srcDoc={iframeSrcDoc}
+              title={screen.name}
+              className={cn(
+                "w-full h-full border-0 pointer-events-none transition-opacity duration-300",
+                iframeLoaded ? "opacity-100" : "opacity-0"
+              )}
+              sandbox=""
+              loading="lazy"
+              onLoad={() => setIframeLoaded(true)}
+            />
+          </>
+        )}
+
+        {renderMode === "image" && (
           <Image
-            src={screen.image_url}
+            src={screen.image_url!}
             alt={screen.name}
             width={screen.width}
             height={screen.height}
             className="w-full h-full object-cover"
             unoptimized
           />
-        ) : (
+        )}
+
+        {renderMode === "placeholder" && (
           <div className="w-full h-full flex items-center justify-center bg-surface-elevated">
             <div className="text-center">
               <svg
@@ -62,14 +136,21 @@ export function ScreenCard({ screen, zoom, onClick }: ScreenCardProps) {
                 <path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21" />
               </svg>
               <p className="text-xs text-text-tertiary font-mono">
-                {screen.source_type === "html" ? "HTML" : "No image"}
+                {screen.source_html ? "HTML" : "No preview"}
               </p>
             </div>
           </div>
         )}
+
+        {/* Live indicator dot */}
+        {renderMode === "iframe" && iframeLoaded && (
+          <div className="absolute top-2 right-2 flex items-center gap-1 bg-black/60 backdrop-blur-sm rounded-full px-1.5 py-0.5">
+            <div className="w-1.5 h-1.5 rounded-full bg-success animate-pulse" />
+            <span className="text-[8px] font-mono text-white/70">LIVE</span>
+          </div>
+        )}
       </button>
 
-      {/* Label + asset badges */}
       {showLabel && (
         <div
           className="mt-2 transition-opacity duration-150"
