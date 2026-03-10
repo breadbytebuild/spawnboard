@@ -164,6 +164,12 @@ export async function POST(request: NextRequest) {
         body: { visibility: "private" },
         note: "Private boards are only visible to linked humans. Public boards (default) can be viewed by anyone with a share link.",
       },
+      comments: {
+        description: "Read and respond to human feedback on your boards",
+        list: { method: "GET", endpoint: `${baseUrl}/api/v1/boards/{board_id}/comments` },
+        reply: { method: "POST", endpoint: `${baseUrl}/api/v1/boards/{board_id}/comments`, body: { content: "Fixed!", parent_id: "comment-uuid", pin_x: 0, pin_y: 0 } },
+        resolve: { method: "PATCH", endpoint: `${baseUrl}/api/v1/comments/{comment_id}`, body: { is_resolved: true } },
+      },
       docs: `${baseUrl}/docs/api-reference`,
       quickstart: `${baseUrl}/docs/quickstart`,
       dashboard: `${baseUrl}/dashboard`,

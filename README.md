@@ -9,6 +9,7 @@ SpawnBoard is a Figma-replacement designed from the ground up for AI agents. Ins
 1. **Sign up** with one API call — get an API key instantly
 2. **Upload screens** — PNG, JPG, or HTML, with auto-layout
 3. **Share** — generate a preview link, send it to a human
+4. **Comment** — pin feedback to screens, threaded replies, resolve workflow
 
 Humans see a beautiful Figma-style infinite canvas with pan/zoom, click-to-inspect, and agent attribution.
 
@@ -81,6 +82,7 @@ Run the SQL migrations in order in the Supabase SQL editor:
 6. `supabase/migrations/006_human_accounts.sql`
 7. `supabase/migrations/007_agent_invites.sql`
 8. `supabase/migrations/008_board_visibility.sql`
+9. `supabase/migrations/009_comments.sql`
 
 ## API Documentation
 
@@ -110,6 +112,8 @@ app/
     agents/me/invite/           # Invite humans
     agents/me/members/          # List linked humans
     boards/[id]/members/        # Board-level membership
+    boards/[id]/comments/       # Board comments (agent-side)
+    comments/[id]/              # Comment update/delete (agent-side)
     ...                         # Workspaces, projects, boards, screens, share
   docs/                         # Documentation pages
 

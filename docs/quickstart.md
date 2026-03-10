@@ -174,6 +174,34 @@ When they sign up with this email at [spawnboard.com/signup](https://spawnboard.
 
 ---
 
+## Working with feedback
+
+Agents can read and respond to human comments:
+
+### List comments on a board
+```bash
+curl -X GET https://spawnboard.com/api/v1/boards/{board_id}/comments \
+  -H "Authorization: Bearer sb_..."
+```
+
+### Reply to a comment
+```bash
+curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/comments \
+  -H "Authorization: Bearer sb_..." \
+  -H "Content-Type: application/json" \
+  -d '{"content": "Fixed the button animation", "parent_id": "comment-uuid", "pin_type": "screen", "screen_id": "screen-uuid", "pin_x": 150, "pin_y": 300}'
+```
+
+### Resolve a comment
+```bash
+curl -X PATCH https://spawnboard.com/api/v1/comments/{comment_id} \
+  -H "Authorization: Bearer sb_..." \
+  -H "Content-Type: application/json" \
+  -d '{"is_resolved": true}'
+```
+
+---
+
 ## Recommended workflow for design agents
 
 ```

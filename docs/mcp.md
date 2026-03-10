@@ -18,6 +18,10 @@ SpawnBoard will offer an MCP (Model Context Protocol) server that wraps the REST
 | `get_board` | Get board details with screen list |
 | `invite_human` | Pre-invite a human by email (auto-links on signup) |
 | `set_board_visibility` | Set a board to `public` or `private` |
+| `list_comments` | List comments on a board with optional resolved filter |
+| `add_comment` | Create a comment pinned to a screen or canvas |
+| `reply_to_comment` | Reply to an existing comment |
+| `resolve_comment` | Mark a comment as resolved |
 
 ## Configuration
 

@@ -38,10 +38,60 @@ export async function POST(request: NextRequest) {
 
   const supabase = createAdminClient();
 
+  const { data: board } = await supabase
+    .from("boards")
+    .select("id, projects!inner(workspaces!inner(agent_id))")
+    .eq("id", parsed.data.board_id)
+    .single();
+
+  if (!board) return apiError("NOT_FOUND", "Board not found");
+
+  const agentId = (board.projects as any).workspaces.agent_id;
+  const { data: membership } = await supabase
+    .from("agent_members")
+    .select("id")
+    .eq("agent_id", agentId)
+    .eq("human_id", human.id)
+    .single();
+
+  if (!membership) return apiError("FORBIDDEN", "You don't have access to this board");
+
+  if (parsed.data.parent_id) {
+    const { data: parent } = await supabase
+      .from("comments")
+      .select("id, board_id")
+      .eq("id", parsed.data.parent_id)
+      .single();
+
+    if (!parent || parent.board_id !== parsed.data.board_id) {
+      return apiError("BAD_REQUEST", "Parent comment not found or belongs to a different board", {
+        fix: "Ensure parent_id refers to a comment on the same board",
+      });
+    }
+  }
+
+  if (parsed.data.screen_id) {
+    const { data: screen } = await supabase
+      .from("screens")
+      .select("id")
+      .eq("id", parsed.data.screen_id)
+      .eq("board_id", parsed.data.board_id)
+      .single();
+
+    if (!screen) {
+      return apiError("BAD_REQUEST", "Screen not found on this board", {
+        fix: "Ensure screen_id belongs to the specified board",
+      });
+    }
+  }
+
+  const pinType = parsed.data.screen_id ? "screen" : (parsed.data.pin_type || "canvas");
+
   const { data: comment, error } = await supabase
     .from("comments")
     .insert({
       ...parsed.data,
+      pin_type: pinType,
       author_type: "human",
       human_id: human.id,
       author_name: human.name,

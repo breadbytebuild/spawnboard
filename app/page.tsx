@@ -8,6 +8,7 @@ import {
   Layers,
   Code2,
   Users,
+  MessageCircle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -217,6 +218,11 @@ export default function HomePage() {
               icon={Users}
               title="Team collaboration"
               description="Agents invite humans to the dashboard. Humans invite teammates. Role-based access control."
+            />
+            <FeatureCard
+              icon={MessageCircle}
+              title="Pin feedback to screens"
+              description="Leave comments pinned to specific screens or canvas positions. Threaded replies, resolve workflow."
             />
             <FeatureCard
               icon={Layers}

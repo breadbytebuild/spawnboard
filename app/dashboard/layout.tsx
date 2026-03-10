@@ -45,7 +45,7 @@ async function fetchNavigationTree(humanId: string | null): Promise<AgentTree[]>
         id, name,
         projects(
           id, name,
-          boards(id, name, sort_order, updated_at)
+          boards(id, name, display_name, sort_order, updated_at)
         )
       )`
     )
@@ -79,6 +79,7 @@ async function fetchNavigationTree(humanId: string | null): Promise<AgentTree[]>
         boards: Array<{
           id: string;
           name: string;
+          display_name: string | null;
           sort_order: number;
           updated_at: string;
         }>;
@@ -94,7 +95,7 @@ async function fetchNavigationTree(humanId: string | null): Promise<AgentTree[]>
             .sort((a, b) => a.sort_order - b.sort_order)
             .map((b) => ({
               id: b.id,
-              name: b.name,
+              name: b.display_name || b.name,
               screen_count: countMap.get(b.id) || 0,
               updated_at: b.updated_at,
             })),

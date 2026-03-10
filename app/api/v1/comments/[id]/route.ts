@@ -60,9 +60,19 @@ export async function PATCH(
     });
   }
 
+  const updateData: Record<string, unknown> = { ...updates };
+
+  if (parsed.data.is_resolved === true) {
+    updateData.resolved_at = new Date().toISOString();
+  }
+  if (parsed.data.is_resolved === false) {
+    updateData.resolved_by = null;
+    updateData.resolved_at = null;
+  }
+
   const { data: comment, error } = await supabase
     .from("comments")
-    .update(updates)
+    .update(updateData)
     .eq("id", commentId)
     .select("*")
     .single();

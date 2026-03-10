@@ -115,11 +115,43 @@ export async function POST(
     return zodApiError(parsed.error, "comment creation");
   }
 
+  if (parsed.data.parent_id) {
+    const { data: parent } = await supabase
+      .from("comments")
+      .select("id, board_id")
+      .eq("id", parsed.data.parent_id)
+      .single();
+
+    if (!parent || parent.board_id !== boardId) {
+      return apiError("BAD_REQUEST", "Parent comment not found or belongs to a different board", {
+        fix: "Ensure parent_id refers to a comment on the same board",
+      });
+    }
+  }
+
+  if (parsed.data.screen_id) {
+    const { data: screen } = await supabase
+      .from("screens")
+      .select("id")
+      .eq("id", parsed.data.screen_id)
+      .eq("board_id", boardId)
+      .single();
+
+    if (!screen) {
+      return apiError("BAD_REQUEST", "Screen not found on this board", {
+        fix: "Ensure screen_id belongs to the specified board",
+      });
+    }
+  }
+
+  const pinType = parsed.data.screen_id ? "screen" : (parsed.data.pin_type || "canvas");
+
   const { data: comment, error } = await supabase
     .from("comments")
     .insert({
       board_id: boardId,
       ...parsed.data,
+      pin_type: pinType,
       author_type: "agent",
       agent_id: agent.id,
       author_name: agent.name,

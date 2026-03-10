@@ -1,12 +1,16 @@
+export const dynamic = "force-dynamic";
+
 import { createAdminClient } from "@/lib/supabase/admin";
-import { BoardCanvas } from "@/components/canvas/board-canvas";
+import { getCurrentHuman } from "@/lib/auth/helpers";
+import { BoardCanvasWrapper } from "@/components/canvas/board-canvas-wrapper";
 import { notFound } from "next/navigation";
 
 interface Props {
   params: Promise<{ id: string }>;
 }
 
-const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const UUID_RE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default async function BoardPage({ params }: Props) {
   const { id } = await params;
@@ -19,7 +23,7 @@ export default async function BoardPage({ params }: Props) {
 
   const { data: board, error: boardError } = await supabase
     .from("boards")
-    .select("id, name, description, canvas_state")
+    .select("id, name, display_name, description, canvas_state, visibility")
     .eq("id", id)
     .single();
 
@@ -37,9 +41,19 @@ export default async function BoardPage({ params }: Props) {
     .order("created_at")
     .limit(500);
 
+  const { data: comments } = await supabase
+    .from("comments")
+    .select("*")
+    .eq("board_id", id)
+    .order("created_at");
+
+  const human = await getCurrentHuman();
+
   return (
     <div className="h-screen">
-      <BoardCanvas
+      <BoardCanvasWrapper
+        boardId={id}
+        boardName={board.display_name || board.name}
         screens={(screens || []).map((s) => ({
           id: s.id,
           name: s.name,
@@ -57,7 +71,22 @@ export default async function BoardPage({ params }: Props) {
           source_css: s.source_css ?? null,
           context_md: s.context_md ?? null,
         }))}
-        boardName={board.name}
+        comments={(comments || []).map((c) => ({
+          id: c.id,
+          pin_type: c.pin_type,
+          screen_id: c.screen_id,
+          pin_x: c.pin_x,
+          pin_y: c.pin_y,
+          author_type: c.author_type,
+          author_name: c.author_name,
+          content: c.content,
+          parent_id: c.parent_id,
+          is_resolved: c.is_resolved,
+          created_at: c.created_at,
+          updated_at: c.updated_at,
+        }))}
+        humanId={human?.id ?? null}
+        humanName={human?.name ?? null}
       />
     </div>
   );

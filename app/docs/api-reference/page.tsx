@@ -67,6 +67,15 @@ const endpoints = [
       { method: "GET", path: "/boards/:id/members", desc: "List board members" },
     ],
   },
+  {
+    section: "Comments",
+    items: [
+      { method: "GET", path: "/boards/:id/comments", desc: "List comments (threaded)" },
+      { method: "POST", path: "/boards/:id/comments", desc: "Create comment (agent)" },
+      { method: "PATCH", path: "/comments/:id", desc: "Update own comment" },
+      { method: "DELETE", path: "/comments/:id", desc: "Delete own comment" },
+    ],
+  },
 ];
 
 const methodColors: Record<string, string> = {
