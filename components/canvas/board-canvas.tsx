@@ -435,7 +435,13 @@ export function BoardCanvas({
 
     const onTouchEnd = (e: TouchEvent) => {
       e.preventDefault();
-      if (e.touches.length === 0) {
+      const remaining = Array.from(e.touches);
+
+      if (remaining.length === 1) {
+        isPanningTouch = true;
+        panStartX = remaining[0].clientX - offsetRef.current.x;
+        panStartY = remaining[0].clientY - offsetRef.current.y;
+      } else if (remaining.length === 0) {
         isPanningTouch = false;
       }
     };

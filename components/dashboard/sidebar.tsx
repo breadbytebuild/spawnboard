@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -67,9 +67,13 @@ export function Sidebar({ agents, human, mobileOpen, onMobileClose }: SidebarPro
   }, []);
 
   // Auto-close mobile drawer on navigation
+  const prevPathRef = useRef(pathname);
   useEffect(() => {
-    if (isMobile && mobileOpen) onMobileClose?.();
-  }, [pathname]); // eslint-disable-line react-hooks/exhaustive-deps
+    if (pathname !== prevPathRef.current) {
+      prevPathRef.current = pathname;
+      if (mobileOpen) onMobileClose?.();
+    }
+  }, [pathname, mobileOpen, onMobileClose]);
 
   const toggleCollapsed = () => {
     const next = !collapsed;
@@ -88,8 +92,8 @@ export function Sidebar({ agents, human, mobileOpen, onMobileClose }: SidebarPro
   const isExpanded = (key: string) => expanded[key] !== false; // default open
 
   if (!mounted) {
-    if (isMobile) return null;
-    return <aside className="w-64 h-screen bg-surface border-r border-border" />;
+    // CSS-only skeleton: visible on desktop, hidden on mobile. No hydration flash.
+    return <aside className="hidden md:block w-64 h-screen bg-surface border-r border-border" />;
   }
 
   const sidebarContent = (

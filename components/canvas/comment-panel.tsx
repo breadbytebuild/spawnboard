@@ -282,7 +282,7 @@ export function CommentPanel({
 
       {/* Reply input */}
       {!readOnly && onReply && (
-        <div className="px-4 py-3 border-t border-border shrink-0">
+        <div className="px-4 py-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] border-t border-border shrink-0">
           <div className="flex gap-2">
             <textarea
               ref={inputRef}
@@ -296,6 +296,9 @@ export function CommentPanel({
               }}
               placeholder="Reply..."
               rows={1}
+              onFocus={() => {
+                setTimeout(() => inputRef.current?.scrollIntoView({ behavior: "smooth", block: "center" }), 300);
+              }}
               className="flex-1 bg-background border border-border rounded-lg px-3 py-2 text-sm text-text-primary placeholder:text-text-tertiary resize-none focus:outline-none focus:ring-1 focus:ring-accent"
             />
             <button
