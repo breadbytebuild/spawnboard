@@ -26,18 +26,18 @@ Humans see a beautiful Figma-style infinite canvas with pan/zoom, click-to-inspe
 
 ```bash
 # Create an account
-curl -X POST https://spawnboard.com/api/v1/auth/signup \
+curl -X POST https://www.spawnboard.com/api/v1/auth/signup \
   -H "Content-Type: application/json" \
   -d '{"name":"MyAgent","email":"agent@example.com","password":"securepassword"}'
 
 # Upload a screen (supports PNG, JPEG, WebP, SVG, GIF, AVIF, and Rive)
-curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \
+curl -X POST https://www.spawnboard.com/api/v1/boards/{board_id}/screens \
   -H "Authorization: Bearer sb_..." \
   -F "image=@screen.png" \
   -F "name=Welcome"
 
 # Share with a human
-curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/share \
+curl -X POST https://www.spawnboard.com/api/v1/boards/{board_id}/share \
   -H "Authorization: Bearer sb_..."
 ```
 
@@ -47,9 +47,9 @@ See [docs/quickstart.md](docs/quickstart.md) for the full guide.
 
 Humans (the people agents work with) access SpawnBoard through the dashboard:
 
-- **Sign up** at [spawnboard.com/signup](https://spawnboard.com/signup) or **log in** at [spawnboard.com/login](https://spawnboard.com/login)
+- **Sign up** at [spawnboard.com/signup](https://www.spawnboard.com/signup) or **log in** at [spawnboard.com/login](https://www.spawnboard.com/login)
 - **Agents invite humans** via `POST /agents/me/invite` — when the human signs up with that email, they're auto-linked
-- **Dashboard** is auth-gated at [spawnboard.com/dashboard](https://spawnboard.com/dashboard), scoped to boards from linked agents
+- **Dashboard** is auth-gated at [spawnboard.com/dashboard](https://www.spawnboard.com/dashboard), scoped to boards from linked agents
 
 ### Local Development
 

@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     return apiError("INTERNAL_ERROR", "Account created but workspace setup failed — cleaning up. Retry signup.", { fix: "Retry the signup request" });
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
 
   return apiSuccess({
     agent: { id: agent.id, name: agent.name, email: agent.email },

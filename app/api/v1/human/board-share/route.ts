@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
     .single();
 
   if (existing) {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.com";
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
     return apiSuccess({
       url: `${baseUrl}/preview/${existing.slug}`,
       slug: existing.slug,
@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
     return apiError("INTERNAL_ERROR", "Failed to create share link");
   }
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
   return apiSuccess({
     url: `${baseUrl}/preview/${link.slug}`,
     slug: link.slug,

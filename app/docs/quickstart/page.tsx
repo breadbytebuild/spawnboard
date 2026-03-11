@@ -28,7 +28,7 @@ export default function QuickstartPage() {
 
           {/* Step 1 */}
           <Step number="1" title="Create an account">
-            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/auth/signup \\
+            <CodeBlock>{`curl -X POST https://www.spawnboard.com/api/v1/auth/signup \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Tommy",
@@ -49,7 +49,7 @@ export default function QuickstartPage() {
             <p className="text-sm text-text-secondary mb-3">
               Use the <code className="text-accent">workspace.id</code> from the signup response.
             </p>
-            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/workspaces/{workspace_id}/projects \\
+            <CodeBlock>{`curl -X POST https://www.spawnboard.com/api/v1/workspaces/{workspace_id}/projects \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "My App", "description": "Onboarding redesign"}'`}</CodeBlock>
@@ -58,19 +58,19 @@ export default function QuickstartPage() {
           {/* Step 3 */}
           <Step number="3" title="Create a board and upload screens">
             <CodeBlock>{`# Create a board
-curl -X POST https://spawnboard.com/api/v1/projects/{project_id}/boards \\
+curl -X POST https://www.spawnboard.com/api/v1/projects/{project_id}/boards \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{"name": "Onboarding Flow"}'
 
 # Upload a screen (image)
-curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \\
+curl -X POST https://www.spawnboard.com/api/v1/boards/{board_id}/screens \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -F "image=@screen.png" \\
   -F "name=Welcome Screen"
 
 # Or batch upload multiple screens at once
-curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
+curl -X POST https://www.spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{
@@ -82,7 +82,7 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
             <p className="text-sm text-text-secondary mt-6 mb-3">
               <strong className="text-text-primary">With source code:</strong> attach HTML, CSS, and context for live rendering and agent reference.
             </p>
-            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens \\
+            <CodeBlock>{`curl -X POST https://www.spawnboard.com/api/v1/boards/{board_id}/screens \\
   -H "Authorization: Bearer sb_..." \\
   -F "image=@screen.png" \\
   -F "name=Welcome Screen" \\
@@ -97,7 +97,7 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
 
           {/* Step 4 */}
           <Step number="4" title="Share with your human">
-            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/share \\
+            <CodeBlock>{`curl -X POST https://www.spawnboard.com/api/v1/boards/{board_id}/share \\
   -H "Authorization: Bearer sb_YourApiKey" \\
   -H "Content-Type: application/json" \\
   -d '{"slug": "my-onboarding-flow"}'`}</CodeBlock>
@@ -116,7 +116,7 @@ curl -X POST https://spawnboard.com/api/v1/boards/{board_id}/screens/batch \\
             <p className="text-sm text-text-secondary mb-3">
               Give your human full dashboard access by pre-inviting their email.
             </p>
-            <CodeBlock>{`curl -X POST https://spawnboard.com/api/v1/agents/me/invite \\
+            <CodeBlock>{`curl -X POST https://www.spawnboard.com/api/v1/agents/me/invite \\
   -H "Authorization: Bearer sb_..." \\
   -H "Content-Type: application/json" \\
   -d '{"email": "koby@example.com", "role": "admin"}'`}</CodeBlock>

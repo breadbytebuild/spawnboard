@@ -62,7 +62,7 @@ export async function POST(request: NextRequest) {
     .limit(1)
     .single();
 
-  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://spawnboard.com";
+  const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
 
   if (existing) {
     return apiSuccess({

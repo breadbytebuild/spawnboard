@@ -110,7 +110,14 @@ export async function POST(
     : [];
 
   const imageFile = formData.get("image");
-  const htmlContent = formData.get("html") as string | null;
+  const htmlRaw = formData.get("html");
+  // html can be sent as a string (-F 'html=<html>...') or as a file (-F 'html=@file.html')
+  let htmlContent: string | null = null;
+  if (htmlRaw instanceof File) {
+    htmlContent = await htmlRaw.text();
+  } else if (typeof htmlRaw === "string") {
+    htmlContent = htmlRaw;
+  }
 
   if (!imageFile && !htmlContent) {
     return apiError("BAD_REQUEST", "Missing screen content. You must provide either an 'image' file (PNG/JPEG/WebP, max 10MB) or an 'html' text field (max 1MB), or both.", { fix: "Add -F 'image=@yourfile.png' or -F 'html=<html>...</html>' to your request" });
