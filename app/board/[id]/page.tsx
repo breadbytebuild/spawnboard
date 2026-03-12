@@ -16,15 +16,34 @@ export default async function BoardRedirectPage({ params }: Props) {
     notFound();
   }
 
+  const supabase = createAdminClient();
   const human = await getCurrentHuman();
 
-  // Logged-in user → send to dashboard
   if (human) {
-    redirect(`/dashboard/boards/${id}`);
+    // Check if this human has access to the board's agent
+    const { data: board } = await supabase
+      .from("boards")
+      .select("id, projects!inner(workspaces!inner(agent_id))")
+      .eq("id", id)
+      .single();
+
+    if (board) {
+      const agentId = (board.projects as unknown as { workspaces: { agent_id: string } }).workspaces.agent_id;
+      const { data: membership } = await supabase
+        .from("agent_members")
+        .select("id")
+        .eq("agent_id", agentId)
+        .eq("human_id", human.id)
+        .single();
+
+      if (membership) {
+        redirect(`/dashboard/boards/${id}`);
+      }
+    }
+    // Human is logged in but not linked — fall through to preview
   }
 
-  // Not logged in → find the public share link and redirect to preview
-  const supabase = createAdminClient();
+  // Find the public share link
   const { data: shareLink } = await supabase
     .from("share_links")
     .select("slug")
@@ -37,6 +56,11 @@ export default async function BoardRedirectPage({ params }: Props) {
     redirect(`/preview/${shareLink.slug}`);
   }
 
-  // No share link → send to login
-  redirect(`/login?redirect=/dashboard/boards/${id}`);
+  // No share link — if logged in, send to dashboard (they'll see the board via admin client)
+  // If not logged in, send to login
+  if (human) {
+    redirect(`/dashboard/boards/${id}`);
+  }
+
+  redirect(`/login?redirect=/board/${id}`);
 }

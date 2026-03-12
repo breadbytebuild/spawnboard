@@ -111,9 +111,12 @@ export async function POST(
 
   const imageFile = formData.get("image");
   const htmlRaw = formData.get("html");
-  // html can be sent as a string (-F 'html=<html>...') or as a file (-F 'html=@file.html')
+  const MAX_HTML_SIZE = 1 * 1024 * 1024; // 1MB — declared early for file size check
   let htmlContent: string | null = null;
   if (htmlRaw instanceof File) {
+    if (htmlRaw.size > MAX_HTML_SIZE) {
+      return apiError("BAD_REQUEST", "HTML file too large (max 1MB). Reduce the file size and retry.", { fix: "Simplify the HTML or remove inline assets" });
+    }
     htmlContent = await htmlRaw.text();
   } else if (typeof htmlRaw === "string") {
     htmlContent = htmlRaw;
@@ -124,7 +127,6 @@ export async function POST(
   }
 
   const MAX_IMAGE_SIZE = 10 * 1024 * 1024; // 10MB
-  const MAX_HTML_SIZE = 1 * 1024 * 1024; // 1MB
 
   if (imageFile && imageFile instanceof File) {
     if (imageFile.size > MAX_IMAGE_SIZE) {
