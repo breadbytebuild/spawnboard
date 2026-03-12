@@ -437,73 +437,94 @@ export function BoardCanvas({
   }, []);
 
   // Touch: pan (single finger) + pinch-to-zoom (two fingers)
+  // Uses local mutable state for smooth 120Hz tracking, syncs to React at the end
   useEffect(() => {
     const el = containerRef.current;
     if (!el) return;
 
-    let isPanningTouch = false;
-    let panStartX = 0;
-    let panStartY = 0;
+    let mode: "none" | "pan" | "pinch" = "none";
+    let lastTouchX = 0;
+    let lastTouchY = 0;
+
+    // Pinch state — track both the zoom and offset locally to avoid React batching jitter
     let pinchStartDist = 0;
     let pinchStartZoom = 1;
+    let pinchStartOffsetX = 0;
+    let pinchStartOffsetY = 0;
+    let pinchMidX = 0;
+    let pinchMidY = 0;
 
     const onTouchStart = (e: TouchEvent) => {
       e.preventDefault();
-      const touches = Array.from(e.touches);
+      const t = e.touches;
 
-      if (touches.length === 1) {
-        isPanningTouch = true;
-        panStartX = touches[0].clientX - offsetRef.current.x;
-        panStartY = touches[0].clientY - offsetRef.current.y;
-      } else if (touches.length === 2) {
-        isPanningTouch = false;
-        pinchStartDist = Math.hypot(
-          touches[1].clientX - touches[0].clientX,
-          touches[1].clientY - touches[0].clientY
-        );
+      if (t.length === 1) {
+        mode = "pan";
+        lastTouchX = t[0].clientX;
+        lastTouchY = t[0].clientY;
+      } else if (t.length === 2) {
+        mode = "pinch";
+        const dx = t[1].clientX - t[0].clientX;
+        const dy = t[1].clientY - t[0].clientY;
+        pinchStartDist = Math.max(Math.hypot(dx, dy), 1); // prevent division by zero
         pinchStartZoom = zoomRef.current;
+        pinchStartOffsetX = offsetRef.current.x;
+        pinchStartOffsetY = offsetRef.current.y;
+
+        const rect = el.getBoundingClientRect();
+        pinchMidX = (t[0].clientX + t[1].clientX) / 2 - rect.left;
+        pinchMidY = (t[0].clientY + t[1].clientY) / 2 - rect.top;
       }
     };
 
     const onTouchMove = (e: TouchEvent) => {
       e.preventDefault();
-      const touches = Array.from(e.touches);
+      const t = e.touches;
 
-      if (touches.length === 1 && isPanningTouch) {
-        setOffset({
-          x: touches[0].clientX - panStartX,
-          y: touches[0].clientY - panStartY,
-        });
-      } else if (touches.length === 2) {
-        const [t1, t2] = touches;
-        const dist = Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-        const midX = (t1.clientX + t2.clientX) / 2;
-        const midY = (t1.clientY + t2.clientY) / 2;
-        const rect = el.getBoundingClientRect();
-        const mx = midX - rect.left;
-        const my = midY - rect.top;
+      if (t.length === 1 && mode === "pan") {
+        // Delta-based pan — smoother than absolute position
+        const dx = t[0].clientX - lastTouchX;
+        const dy = t[0].clientY - lastTouchY;
+        lastTouchX = t[0].clientX;
+        lastTouchY = t[0].clientY;
 
-        const newZoom = clampZoom(pinchStartZoom * (dist / pinchStartDist));
-        const zoomRatio = newZoom / zoomRef.current;
+        // Update ref immediately for smoothness, sync to state
+        offsetRef.current = {
+          x: offsetRef.current.x + dx,
+          y: offsetRef.current.y + dy,
+        };
+        setOffset({ ...offsetRef.current });
+      } else if (t.length === 2 && mode === "pinch") {
+        const dx = t[1].clientX - t[0].clientX;
+        const dy = t[1].clientY - t[0].clientY;
+        const dist = Math.max(Math.hypot(dx, dy), 1);
+        const scale = dist / pinchStartDist;
+        const newZoom = clampZoom(pinchStartZoom * scale);
 
-        setOffset((prev) => ({
-          x: mx - (mx - prev.x) * zoomRatio,
-          y: my - (my - prev.y) * zoomRatio,
-        }));
+        // Zoom toward the pinch midpoint — calculate new offset from the start state
+        const ratio = newZoom / pinchStartZoom;
+        const newOffsetX = pinchMidX - (pinchMidX - pinchStartOffsetX) * ratio;
+        const newOffsetY = pinchMidY - (pinchMidY - pinchStartOffsetY) * ratio;
+
+        // Update refs immediately, batch the React state update
+        offsetRef.current = { x: newOffsetX, y: newOffsetY };
+        zoomRef.current = newZoom;
+        setOffset({ x: newOffsetX, y: newOffsetY });
         setZoom(newZoom);
       }
     };
 
     const onTouchEnd = (e: TouchEvent) => {
       e.preventDefault();
-      const remaining = Array.from(e.touches);
+      const remaining = e.touches;
 
       if (remaining.length === 1) {
-        isPanningTouch = true;
-        panStartX = remaining[0].clientX - offsetRef.current.x;
-        panStartY = remaining[0].clientY - offsetRef.current.y;
+        // Transition from pinch to pan — reinitialize
+        mode = "pan";
+        lastTouchX = remaining[0].clientX;
+        lastTouchY = remaining[0].clientY;
       } else if (remaining.length === 0) {
-        isPanningTouch = false;
+        mode = "none";
       }
     };
 
