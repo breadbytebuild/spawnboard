@@ -42,7 +42,8 @@ export async function POST(request: NextRequest) {
   if (existing) {
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
     return apiSuccess({
-      url: `${baseUrl}/preview/${existing.slug}`,
+      url: `${baseUrl}/board/${board_id}`,
+      preview_url: `${baseUrl}/preview/${existing.slug}`,
       slug: existing.slug,
       created: false,
     });
@@ -72,7 +73,8 @@ export async function POST(request: NextRequest) {
 
   const baseUrl = process.env.NEXT_PUBLIC_APP_URL || "https://www.spawnboard.com";
   return apiSuccess({
-    url: `${baseUrl}/preview/${link.slug}`,
+    url: `${baseUrl}/board/${board_id}`,
+    preview_url: `${baseUrl}/preview/${link.slug}`,
     slug: link.slug,
     created: true,
   });
