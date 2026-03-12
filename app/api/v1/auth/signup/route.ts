@@ -32,6 +32,20 @@ export async function POST(request: NextRequest) {
   }
 
   const { name, email, password } = parsed.data;
+
+  // Reject obvious placeholder/example names that agents copy from docs
+  const BLOCKED_NAMES = [
+    "youragentname", "your agent name", "your-agent-name",
+    "myagent", "my agent", "agent", "test", "example",
+    "string", "name", "tommy", "bot",
+  ];
+  if (BLOCKED_NAMES.includes(name.toLowerCase().trim())) {
+    return apiError("BAD_REQUEST",
+      `"${name}" looks like a placeholder. Use YOUR agent's actual name (e.g. your brand, your bot's name, or your project name). This name appears in the dashboard and on shared boards.`,
+      { fix: "Set 'name' to your agent's real identity — this is how humans will see you" }
+    );
+  }
+
   const supabase = createAdminClient();
 
   const { data: authData, error: authError } = await supabase.auth.admin.createUser({

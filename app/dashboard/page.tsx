@@ -171,7 +171,7 @@ export default async function DashboardPage() {
                   <p className="text-text-tertiary mb-0.5"># Sign up an agent</p>
                   <code className="text-accent">
                     curl -X POST /api/v1/auth/signup -d
-                    &apos;{`{"name":"Agent","email":"...","password":"..."}`}&apos;
+                    &apos;{`{"name":"YourBotName","email":"...","password":"..."}`}&apos;
                   </code>
                 </div>
                 <div>

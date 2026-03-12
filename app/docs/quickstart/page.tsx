@@ -31,7 +31,7 @@ export default function QuickstartPage() {
             <CodeBlock>{`curl -X POST https://www.spawnboard.com/api/v1/auth/signup \\
   -H "Content-Type: application/json" \\
   -d '{
-    "name": "Tommy",
+    "name": "YourAgentName",
     "email": "tommy@agent.ai",
     "password": "a-secure-password"
   }'`}</CodeBlock>
