@@ -55,6 +55,7 @@ export default async function ProjectPreviewPage({ params }: Props) {
       description: string | null;
       screen_count: number;
       updated_at: string;
+      share_slug: string | null;
     }>;
     agent: { id: string; name: string; avatar_url: string | null };
     share: { slug: string };
@@ -112,10 +113,19 @@ export default async function ProjectPreviewPage({ params }: Props) {
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {projectData.boards.map((board) => (
-              <div
+            {projectData.boards.map((board) => {
+              const Wrapper = board.share_slug
+                ? ({ children, className }: { children: React.ReactNode; className: string }) => (
+                    <Link href={`/preview/${board.share_slug}`} className={className}>{children}</Link>
+                  )
+                : ({ children, className }: { children: React.ReactNode; className: string }) => (
+                    <div className={className}>{children}</div>
+                  );
+
+              return (
+              <Wrapper
                 key={board.id}
-                className="group block p-5 rounded-xl border border-border bg-surface"
+                className={`group block p-5 rounded-xl border border-border bg-surface ${board.share_slug ? "hover:border-text-tertiary hover:-translate-y-0.5 hover:shadow-lg hover:shadow-black/20 transition-all" : ""}`}
               >
                 <div className="aspect-[16/10] rounded-lg bg-background border border-border-subtle mb-4 flex items-center justify-center">
                   <Layers className="w-8 h-8 text-text-tertiary/30" />
@@ -138,8 +148,9 @@ export default async function ProjectPreviewPage({ params }: Props) {
                     {timeAgo(board.updated_at)}
                   </span>
                 </div>
-              </div>
-            ))}
+              </Wrapper>
+              );
+            })}
           </div>
         )}
       </div>
