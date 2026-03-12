@@ -2,6 +2,7 @@ const SCREEN_GAP = 40;
 const DEFAULT_SCREEN_WIDTH = 393;
 const DEFAULT_SCREEN_HEIGHT = 852;
 const COLUMNS = 4;
+const MIN_LAYOUT_WIDTH = 300;
 
 interface ScreenPosition {
   canvas_x: number;
@@ -14,11 +15,18 @@ export function autoLayoutPosition(
   width = DEFAULT_SCREEN_WIDTH,
   height = DEFAULT_SCREEN_HEIGHT
 ): ScreenPosition {
-  const col = existingCount % COLUMNS;
-  const row = Math.floor(existingCount / COLUMNS);
+  // Use at least MIN_LAYOUT_WIDTH for column spacing so narrow assets don't stack
+  const effectiveWidth = Math.max(width, MIN_LAYOUT_WIDTH);
+
+  // For very tall screens (aspect ratio > 3:1), lay out in a single row
+  const aspectRatio = height / Math.max(width, 1);
+  const cols = aspectRatio > 3 ? Math.max(COLUMNS * 2, 8) : COLUMNS;
+
+  const col = existingCount % cols;
+  const row = Math.floor(existingCount / cols);
 
   return {
-    canvas_x: col * (width + SCREEN_GAP),
+    canvas_x: col * (effectiveWidth + SCREEN_GAP),
     canvas_y: row * (height + SCREEN_GAP),
     canvas_scale: 1,
   };
@@ -58,7 +66,9 @@ export function fitToViewBounds(
 
   const scaleX = (viewportWidth - padding * 2) / contentWidth;
   const scaleY = (viewportHeight - padding * 2) / contentHeight;
-  const scale = Math.min(scaleX, scaleY, 1);
+
+  // Don't zoom smaller than 15% — keeps content readable
+  const scale = Math.max(Math.min(scaleX, scaleY, 1), 0.15);
 
   const centerX = minX + contentWidth / 2;
   const centerY = minY + contentHeight / 2;

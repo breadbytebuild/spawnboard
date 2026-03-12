@@ -239,5 +239,18 @@ export async function POST(
 
   if (error) return apiError("INTERNAL_ERROR", "Failed to save screen to database. Server error — retry the request.", { fix: "Retry the request" });
 
-  return apiSuccess({ screen }, 201);
+  // Warn about extreme dimensions that will display poorly
+  const warnings: string[] = [];
+  const finalWidth = screen.width || width;
+  const finalHeight = screen.height || height;
+  const ratio = finalHeight / Math.max(finalWidth, 1);
+
+  if (ratio > 4) {
+    warnings.push(`Very tall aspect ratio (${finalWidth}x${finalHeight}). Full-page screenshots display better when captured at viewport width >= 1280px. Consider using a wider viewport or splitting into sections.`);
+  }
+  if (finalWidth < 200) {
+    warnings.push(`Narrow width (${finalWidth}px). For best canvas display, upload at viewport width >= 393px (mobile) or >= 1280px (desktop).`);
+  }
+
+  return apiSuccess({ screen, ...(warnings.length > 0 ? { warnings } : {}) }, 201);
 }
